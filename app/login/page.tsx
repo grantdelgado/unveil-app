@@ -8,7 +8,9 @@ import { supabase } from '@/lib/supabase/client'
 const DEV_PHONES = {
   '+15550000001': { name: 'Test Host', avatar: '👑', description: 'Event Host' },
   '+15550000002': { name: 'Test Guest', avatar: '🎉', description: 'Wedding Guest' },
-  '+15550000003': { name: 'Test Admin', avatar: '⚙️', description: 'System Admin' }
+  '+15550000003': { name: 'Test Admin', avatar: '⚙️', description: 'System Admin' },
+  // TODO: Replace with your actual phone number temporarily
+  // Example: '+15551234567': { name: 'Your Name', avatar: '🎯', description: 'Your Account' }
 }
 
 const isDevelopment = process.env.NODE_ENV === 'development'
@@ -35,45 +37,78 @@ export default function LoginPage() {
 
   // Handle development phone selection
   const handleDevPhoneLogin = async (devPhone: string, name: string) => {
+    // Prevent multiple simultaneous calls
+    if (loading) return
+    
     setLoading(true)
     setMessage(`Signing in as ${name}...`)
     
     try {
-      // Create deterministic password for consistent sessions
-      const password = `dev-${devPhone.slice(-4)}-${Date.now().toString().slice(-6)}`
+      // Create truly deterministic password (not time-based)
+      const password = `dev-${devPhone.slice(-4)}-unveil-2024`
+      const email = `${devPhone.replace(/\D/g, '')}@dev.unveil.app`
       
-      const { error } = await supabase.auth.signInWithPassword({
-        email: `${devPhone.replace(/\D/g, '')}@dev.unveil.app`,
+      console.log('🔐 Dev login attempt:', { email, phone: devPhone, name })
+      
+      // First, try to sign in with existing account
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
         password: password
       })
       
-      if (error) {
-        // If user doesn't exist, create them
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: `${devPhone.replace(/\D/g, '')}@dev.unveil.app`,
+      if (signInError) {
+        console.log('👤 SignIn failed, trying to create or handle existing user...', signInError.message)
+        
+        // Try regular signup (will fail if user exists, which is fine)
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
           password: password,
           options: {
             data: {
               phone: devPhone,
-              full_name: name
+              full_name: name,
+              development_user: true
             }
           }
         })
         
-        if (signUpError) throw signUpError
+        if (signUpError) {
+          if (signUpError.message.includes('already registered') || signUpError.message.includes('already been taken')) {
+            console.log('✅ User already exists - this is expected!')
+            setMessage(`${name} account exists! Check Supabase settings if login fails.`)
+            
+            // User exists but signin failed - likely email confirmation issue
+            console.log('❌ User exists but signin failed. Email confirmation may be required.')
+            console.log('💡 Solution: Go to Supabase Dashboard → Authentication → Providers → Email → Turn OFF "Confirm email"')
+            
+            setMessage(`${name} account exists but signin failed. Please disable email confirmation in Supabase Dashboard (Auth → Providers → Email → Turn OFF "Confirm email"), then try again.`)
+            setLoading(false)
+            return
+          } else {
+            console.error('❌ SignUp Error:', signUpError)
+            throw new Error(`Account creation failed: ${signUpError.message}`)
+          }
+        } else {
+          console.log('✅ New account created and signed in:', signUpData.user?.id)
+          setMessage(`Welcome ${name}! 🎉`)
+        }
+      } else {
+        console.log('✅ Signed in successfully:', signInData.user?.id)
+        setMessage(`Welcome back ${name}! 🎉`)
       }
       
-      setMessage(`Welcome ${name}! 🎉`)
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Give user feedback before redirect
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
       // AuthSessionWatcher will handle redirect to /select-event
       
     } catch (error) {
-      console.error('Dev login error:', error)
-      setMessage(`Failed to sign in: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ Dev login error:', error)
+      setMessage(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setLoading(false) // Reset loading on error
     }
     
-    setLoading(false)
+    // Don't reset loading here - let the redirect happen or error handle it
   }
 
   // Handle SMS OTP flow  
@@ -91,9 +126,9 @@ export default function LoginPage() {
     }
     
     try {
-      // Check if development phone
-      if (isDevPhone(formattedPhone)) {
-        setMessage('Development phone - SMS verification bypassed')
+      // Check if development phone OR development mode (bypass SMS for any phone in dev)
+      if (isDevPhone(formattedPhone) || isDevelopment) {
+        setMessage('Development mode - SMS verification bypassed')
         setStep('verify')
         setOtp('123456') // Auto-fill for dev
         setLoading(false)

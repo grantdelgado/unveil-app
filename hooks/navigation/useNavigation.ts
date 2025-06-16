@@ -45,37 +45,22 @@ export function useNavigation(): NavigationContext {
           return
         }
 
-        // Check if user is host of this event
-        const { data: hostEvent } = await supabase
-          .from('events')
-          .select('title, host_user_id')
-          .eq('id', eventId)
-          .eq('host_user_id', user.id)
-          .single()
-
-        if (hostEvent) {
-          setNavigationContext({
-            eventId,
-            userRole: 'host',
-            eventTitle: hostEvent.title,
-            isLoading: false
-          })
-          return
-        }
-
-        // Check if user is guest of this event
-        const { data: guestAssignment } = await supabase
-          .from('event_guests')
-          .select('event:events(title)')
+        // Check if user is participant of this event (host or guest)
+        const { data: participantAssignment } = await supabase
+          .from('event_participants')
+          .select(`
+            role,
+            events!inner(title)
+          `)
           .eq('event_id', eventId)
           .eq('user_id', user.id)
           .single()
 
-        if (guestAssignment) {
-          const event = guestAssignment.event as any
+        if (participantAssignment) {
+          const event = participantAssignment.events as any
           setNavigationContext({
             eventId,
-            userRole: 'guest',
+            userRole: participantAssignment.role as 'host' | 'guest',
             eventTitle: event?.title || '',
             isLoading: false
           })

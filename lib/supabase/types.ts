@@ -8,7 +8,7 @@ export type Enums<T extends keyof Database['public']['Enums']> = Database['publi
 
 // Specific table types for convenience
 export type Event = Tables<'events'>
-export type EventGuest = Tables<'event_guests'>
+export type EventParticipant = Tables<'event_participants'>
 export type Message = Tables<'messages'>
 export type Media = Tables<'media'>
 export type User = Tables<'users'>
@@ -16,14 +16,14 @@ export type PublicUserProfile = Database['public']['Views']['public_user_profile
 
 // Insert types
 export type EventInsert = TablesInsert<'events'>
-export type EventGuestInsert = TablesInsert<'event_guests'>
+export type EventParticipantInsert = TablesInsert<'event_participants'>
 export type MessageInsert = TablesInsert<'messages'>
 export type MediaInsert = TablesInsert<'media'>
 export type UserInsert = TablesInsert<'users'>
 
 // Update types
 export type EventUpdate = TablesUpdate<'events'>
-export type EventGuestUpdate = TablesUpdate<'event_guests'>
+export type EventParticipantUpdate = TablesUpdate<'event_participants'>
 export type MessageUpdate = TablesUpdate<'messages'>
 export type MediaUpdate = TablesUpdate<'media'>
 export type UserUpdate = TablesUpdate<'users'>
@@ -38,11 +38,11 @@ export interface EventWithHost extends Event {
   host: PublicUserProfile | null
 }
 
-export interface EventGuestWithUser extends EventGuest {
+export interface EventParticipantWithUser extends EventParticipant {
   user: PublicUserProfile | null
 }
 
-export interface EventGuestWithEvent extends EventGuest {
+export interface EventParticipantWithEvent extends EventParticipant {
   events: Event | null
 }
 

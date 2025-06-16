@@ -179,28 +179,32 @@ export async function sendRSVPReminder(
       throw new Error('Event not found')
     }
 
-    // Fetch guests who need reminders
+    // Fetch participants who need reminders
     let query = supabase
-      .from('event_guests')
-      .select('id, guest_name, phone, rsvp_status')
+      .from('event_participants')
+      .select(`
+        id, 
+        role, 
+        rsvp_status,
+        user:public_user_profiles(phone, full_name)
+      `)
       .eq('event_id', eventId)
-      .not('phone', 'is', null)
-      .not('sms_opt_out', 'eq', true)
+      .not('user.phone', 'is', null)
 
     if (guestIds && guestIds.length > 0) {
       query = query.in('id', guestIds)
     } else {
       // Only send to pending RSVPs
-      query = query.or('rsvp_status.is.null,rsvp_status.eq.Pending')
+      query = query.or('rsvp_status.is.null,rsvp_status.eq.pending')
     }
 
-    const { data: guests, error: guestsError } = await query
+    const { data: participants, error: participantsError } = await query
 
-    if (guestsError) {
-      throw new Error('Failed to fetch guests')
+    if (participantsError) {
+      throw new Error('Failed to fetch participants')
     }
 
-    if (!guests || guests.length === 0) {
+    if (!participants || participants.length === 0) {
       return { sent: 0, failed: 0 }
     }
 
@@ -212,13 +216,13 @@ export async function sendRSVPReminder(
       day: 'numeric'
     })
 
-    const messages: SMSMessage[] = guests
-      .filter(guest => guest.phone)
-      .map(guest => ({
-        to: guest.phone!,
-        message: createRSVPReminderMessage(guest.guest_name, event.title, eventDate, hostName),
+    const messages: SMSMessage[] = participants
+      .filter(participant => participant.user?.phone)
+      .map(participant => ({
+        to: participant.user!.phone!,
+        message: createRSVPReminderMessage(participant.user?.full_name, event.title, eventDate, hostName),
         eventId,
-        guestId: guest.id,
+        guestId: participant.id,
         messageType: 'rsvp_reminder' as const
       }))
 
@@ -254,37 +258,39 @@ export async function sendEventAnnouncement(
       throw new Error('Event not found')
     }
 
-    // Fetch guests with phone numbers
+    // Fetch participants with phone numbers
     let query = supabase
-      .from('event_guests')
-      .select('id, guest_name, phone')
+      .from('event_participants')
+      .select(`
+        id,
+        user:public_user_profiles(phone, full_name)
+      `)
       .eq('event_id', eventId)
-      .not('phone', 'is', null)
-      .not('sms_opt_out', 'eq', true)
+      .not('user.phone', 'is', null)
 
     if (targetGuestIds && targetGuestIds.length > 0) {
       query = query.in('id', targetGuestIds)
     }
 
-    const { data: guests, error: guestsError } = await query
+    const { data: participants, error: participantsError } = await query
 
-    if (guestsError) {
-      throw new Error('Failed to fetch guests')
+    if (participantsError) {
+      throw new Error('Failed to fetch participants')
     }
 
-    if (!guests || guests.length === 0) {
+    if (!participants || participants.length === 0) {
       return { sent: 0, failed: 0 }
     }
 
     const hostName = (event.host as { full_name?: string })?.full_name || 'Your host'
     
-    const messages: SMSMessage[] = guests
-      .filter(guest => guest.phone)
-      .map(guest => ({
-        to: guest.phone!,
-        message: createAnnouncementMessage(guest.guest_name, announcement, event.title, hostName),
+    const messages: SMSMessage[] = participants
+      .filter(participant => participant.user?.phone)
+      .map(participant => ({
+        to: participant.user!.phone!,
+        message: createAnnouncementMessage(participant.user?.full_name, announcement, event.title, hostName),
         eventId,
-        guestId: guest.id,
+        guestId: participant.id,
         messageType: 'announcement' as const
       }))
 
@@ -355,45 +361,4 @@ ${announcement}
 Reply STOP to opt out.`
 }
 
-/**
- * Log SMS to database for tracking
- */
-async function logSMSToDatabase({
-  guestId,
-  phoneNumber,
-  twilioSid,
-  status
-}: {
-  eventId: string
-  guestId?: string
-  phoneNumber: string
-  content: string
-  messageType: string
-  twilioSid?: string
-  status: string
-  errorMessage?: string
-}) {
-  try {
-    // Only log if we have a guest_id (required field)
-    if (!guestId) {
-      return
-    }
-
-    const { supabase } = await import('./supabase')
-    
-    const { error } = await supabase
-      .from('message_deliveries')
-      .insert({
-        guest_id: guestId,
-        phone_number: phoneNumber,
-        sms_status: status,
-        sms_provider_id: twilioSid
-      })
-
-    if (error) {
-      console.error('Failed to log SMS to database:', error)
-    }
-  } catch (dbError: unknown) {
-    console.error('Database logging error:', getErrorMessage(dbError))
-  }
-} 
+ 

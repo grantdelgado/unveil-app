@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-import type { EventInsert, EventUpdate } from '@/lib/supabase/types'
+import type { EventInsert, EventUpdate, EventParticipantInsert } from '@/lib/supabase/types'
 
 // Event service functions
 export const createEvent = async (eventData: EventInsert) => {
@@ -31,7 +31,7 @@ export const getEventById = async (id: string) => {
     .from('events')
     .select(`
       *,
-      host:users!events_host_id_fkey(*)
+      host:public_user_profiles!events_host_user_id_fkey(*)
     `)
     .eq('id', id)
     .single()
@@ -41,51 +41,46 @@ export const getHostEvents = async (hostId: string) => {
   return await supabase
     .from('events')
     .select('*')
-    .eq('host_id', hostId)
+    .eq('host_user_id', hostId)
     .order('event_date', { ascending: true })
 }
 
-export const getGuestEvents = async (userId: string) => {
+export const getParticipantEvents = async (userId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .select(`
       *,
       event:events(
         *,
-        host:users!events_host_id_fkey(*)
+        host:public_user_profiles!events_host_user_id_fkey(*)
       )
     `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 }
 
-export const getEventGuests = async (eventId: string) => {
+export const getEventParticipants = async (eventId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .select(`
       *,
-      user:users(*)
+      user:public_user_profiles(*)
     `)
     .eq('event_id', eventId)
     .order('created_at', { ascending: false })
 }
 
-export const addGuestToEvent = async (eventId: string, phone: string, userId?: string) => {
+export const addParticipantToEvent = async (participantData: EventParticipantInsert) => {
   return await supabase
-    .from('event_guests')
-    .insert({
-      event_id: eventId,
-      phone: phone,
-      user_id: userId || null,
-      rsvp_status: 'pending'
-    })
+    .from('event_participants')
+    .insert(participantData)
     .select()
     .single()
 }
 
-export const updateGuestRSVP = async (eventId: string, userId: string, status: string) => {
+export const updateParticipantRSVP = async (eventId: string, userId: string, status: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .update({ rsvp_status: status })
     .eq('event_id', eventId)
     .eq('user_id', userId)
@@ -93,9 +88,9 @@ export const updateGuestRSVP = async (eventId: string, userId: string, status: s
     .single()
 }
 
-export const removeGuestFromEvent = async (eventId: string, userId: string) => {
+export const removeParticipantFromEvent = async (eventId: string, userId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .delete()
     .eq('event_id', eventId)
     .eq('user_id', userId)

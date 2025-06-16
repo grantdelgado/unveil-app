@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { type EventWithHost, type EventGuestWithUser } from '@/lib/supabase/types'
-import { getEventById, getEventGuests } from '@/services/events'
+import { type EventWithHost, type EventParticipantWithUser } from '@/lib/supabase/types'
+import { getEventById, getEventParticipants } from '@/services/events'
 import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
 
 interface UseEventDetailsReturn {
   event: EventWithHost | null
-  guestInfo: EventGuestWithUser | null
+  participantInfo: EventParticipantWithUser | null
   loading: boolean
   error: AppError | null
   updateRSVP: (status: string) => Promise<{ success: boolean; error: string | null }>
@@ -16,7 +16,7 @@ interface UseEventDetailsReturn {
 
 export function useEventDetails(eventId: string | null, userId: string | null): UseEventDetailsReturn {
   const [event, setEvent] = useState<EventWithHost | null>(null)
-  const [guestInfo, setGuestInfo] = useState<EventGuestWithUser | null>(null)
+  const [participantInfo, setParticipantInfo] = useState<EventParticipantWithUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<AppError | null>(null)
 
@@ -57,27 +57,27 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
         // Silently handle host fetch failures
       }
 
-      // Check if user is a guest of this event (fetch without join first)
-      const { data: guestDataSimple, error: guestSimpleError } = await supabase
-        .from('event_guests')
+      // Check if user is a participant of this event (fetch without join first)
+      const { data: participantDataSimple, error: participantSimpleError } = await supabase
+        .from('event_participants')
         .select('*')
         .eq('event_id', eventId)
         .eq('user_id', userId)
         .single()
 
-      if (guestSimpleError) {
-        console.error('🔍 Simple guest fetch error:', guestSimpleError)
-        console.error('🔍 Simple guest error details:', {
-          code: guestSimpleError.code,
-          message: guestSimpleError.message,
-          details: guestSimpleError.details,
-          hint: guestSimpleError.hint
+      if (participantSimpleError) {
+        console.error('🔍 Simple participant fetch error:', participantSimpleError)
+        console.error('🔍 Simple participant error details:', {
+          code: participantSimpleError.code,
+          message: participantSimpleError.message,
+          details: participantSimpleError.details,
+          hint: participantSimpleError.hint
         })
         throw new Error('You are not invited to this event')
       }
 
-      // Try to fetch the user profile for the guest separately
-      let guestUserProfile = null
+      // Try to fetch the user profile for the participant separately
+      let participantUserProfile = null
       try {
         const { data: userProfile, error: userProfileError } = await supabase
           .from('public_user_profiles')
@@ -86,16 +86,16 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
           .single()
         
         if (!userProfileError) {
-          guestUserProfile = userProfile
+          participantUserProfile = userProfile
         }
       } catch (profileFetchError) {
         // Silently handle profile fetch failures
       }
 
-      // Combine guest data with user profile
-      const guestData = {
-        ...guestDataSimple,
-        user: guestUserProfile
+      // Combine participant data with user profile
+      const participantData = {
+        ...participantDataSimple,
+        user: participantUserProfile
       }
 
       // Combine event data with host info
@@ -105,7 +105,7 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
       }
 
       setEvent(eventWithHost as EventWithHost)
-      setGuestInfo(guestData as EventGuestWithUser)
+      setParticipantInfo(participantData as EventParticipantWithUser)
       setLoading(false)
     }, 'useEventDetails.fetchEventData')
 
@@ -119,20 +119,20 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
   }, [eventId, userId])
 
   const updateRSVP = useCallback(async (status: string) => {
-    if (!guestInfo) return { success: false, error: 'No guest info available' }
+    if (!participantInfo) return { success: false, error: 'No participant info available' }
 
     const wrappedUpdate = withErrorHandling(async () => {
       const { error } = await supabase
-        .from('event_guests')
+        .from('event_participants')
         .update({ rsvp_status: status })
-        .eq('id', guestInfo.id)
+        .eq('id', participantInfo.id)
 
       if (error) {
         throw new Error('Failed to update RSVP')
       }
 
       // Update local state
-      setGuestInfo({ ...guestInfo, rsvp_status: status })
+      setParticipantInfo({ ...participantInfo, rsvp_status: status })
       return { success: true, error: null }
     }, 'useEventDetails.updateRSVP')
 
@@ -142,7 +142,7 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
       return { success: false, error: result.error.message }
     }
     return { success: true, error: null }
-  }, [guestInfo])
+  }, [participantInfo])
 
   const refetch = useCallback(() => {
     if (eventId && userId) {
@@ -156,7 +156,7 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
 
   return {
     event,
-    guestInfo,
+    participantInfo,
     loading,
     error,
     updateRSVP,

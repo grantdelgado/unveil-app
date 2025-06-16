@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import type { UserInsert, UserUpdate, User } from '@/lib/supabase/types'
 
 // User service functions
 export const getUserById = async (id: string) => {
@@ -25,12 +26,7 @@ export const getUserByEmail = async (email: string) => {
     .single()
 }
 
-export const createUser = async (userData: {
-  name: string
-  phone: string
-  email?: string
-  avatar_url?: string
-}) => {
+export const createUser = async (userData: UserInsert) => {
   return await supabase
     .from('users')
     .insert(userData)
@@ -38,12 +34,7 @@ export const createUser = async (userData: {
     .single()
 }
 
-export const updateUser = async (id: string, updates: {
-  name?: string
-  phone?: string
-  email?: string
-  avatar_url?: string
-}) => {
+export const updateUser = async (id: string, updates: UserUpdate) => {
   return await supabase
     .from('users')
     .update(updates)
@@ -63,26 +54,19 @@ export const searchUsers = async (query: string, limit: number = 10) => {
   return await supabase
     .from('users')
     .select('*')
-    .or(`name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%`)
+    .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%`)
     .limit(limit)
 }
 
 export const getUsersWithRoles = async (eventId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .select(`
       *,
-      user:users(*)
+      user:public_user_profiles(*)
     `)
     .eq('event_id', eventId)
 }
 
-export interface UserProfile {
-  id: string
-  name: string
-  phone: string
-  email?: string
-  avatar_url?: string
-  created_at: string
-  updated_at: string
-} 
+// Use the properly typed User interface from MCP-generated types
+export type { User as UserProfile } 

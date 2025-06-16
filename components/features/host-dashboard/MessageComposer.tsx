@@ -7,11 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Database } from '@/app/reference/supabase.types'
 
 type Participant = Database['public']['Tables']['event_participants']['Row'] & {
-  users_new: {
-    full_name: string | null
-    phone: string
-    email: string | null
-  }
+  user: Database['public']['Views']['public_user_profiles']['Row']
 }
 
 interface MessageComposerProps {
@@ -41,11 +37,7 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
           .from('event_participants')
           .select(`
             *,
-            users_new (
-              full_name,
-              phone,
-              email
-            )
+            user:public_user_profiles(*)
           `)
           .eq('event_id', eventId)
 
@@ -67,11 +59,11 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
 
     if (messageType === 'announcement') {
       recipientCount = participants.length
-      recipients = participants.map(p => p.users_new?.full_name || 'Unknown').slice(0, 5)
+      recipients = participants.map(p => p.user?.full_name || 'Unknown').slice(0, 5)
     } else {
       const selectedParticipantData = participants.filter(p => selectedParticipants.includes(p.id))
       recipientCount = selectedParticipantData.length
-      recipients = selectedParticipantData.map(p => p.users_new?.full_name || 'Unknown').slice(0, 5)
+      recipients = selectedParticipantData.map(p => p.user?.full_name || 'Unknown').slice(0, 5)
     }
 
     setPreview({ recipientCount, recipients })
@@ -97,7 +89,7 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
 
       // Insert message into database
       const { error: messageError } = await supabase
-        .from('messages_new')
+        .from('messages')
         .insert({
           event_id: eventId,
           sender_user_id: user.id,
@@ -198,49 +190,38 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
                 {selectedParticipants.length === participants.length ? 'Deselect All' : 'Select All'}
               </Button>
             </div>
-            
-            <div className="max-h-60 overflow-y-auto border border-stone-200 rounded-lg">
-              {participants.length === 0 ? (
-                <div className="p-4 text-center text-stone-500">
-                  No participants found
+
+            <div className="max-h-48 overflow-y-auto border border-stone-200 rounded-lg">
+              {participants.map((participant) => (
+                <div key={participant.id} className="flex items-center p-3 hover:bg-stone-50 border-b border-stone-100 last:border-b-0">
+                  <input
+                    type="checkbox"
+                    id={`participant-${participant.id}`}
+                    checked={selectedParticipants.includes(participant.id)}
+                    onChange={() => handleParticipantToggle(participant.id)}
+                    className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-stone-300 rounded"
+                  />
+                  <label htmlFor={`participant-${participant.id}`} className="flex-1 cursor-pointer">
+                    <div className="text-sm font-medium text-stone-900">
+                      {participant.user?.full_name || 'Unnamed Participant'}
+                    </div>
+                    <div className="text-xs text-stone-500">
+                      Role: {participant.role}
+                    </div>
+                  </label>
                 </div>
-              ) : (
-                <div className="divide-y divide-stone-200">
-                  {participants.map((participant) => (
-                    <label
-                      key={participant.id}
-                      className="flex items-center p-3 hover:bg-stone-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedParticipants.includes(participant.id)}
-                        onChange={() => handleParticipantToggle(participant.id)}
-                        className="rounded border-stone-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <div className="ml-3">
-                        <div className="font-medium text-stone-800">
-                          {participant.users_new?.full_name || 'Unknown'}
-                        </div>
-                        {participant.users_new?.phone && (
-                          <div className="text-sm text-stone-500">
-                            {participant.users_new.phone}
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* Message Content */}
+        {/* Message Input */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">
+          <label htmlFor="message" className="block text-sm font-medium text-stone-700 mb-2">
             Message
           </label>
           <textarea
+            id="message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Enter your message here..."
@@ -248,43 +229,29 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
           />
           <div className="text-xs text-stone-500 mt-1">
-            {message.length}/1000 characters
+            {message.length}/500 characters
           </div>
         </div>
 
-        {/* Message Preview */}
+        {/* Preview */}
         {preview && (
-          <div className="bg-stone-50 rounded-lg p-4">
-            <h3 className="font-medium text-stone-800 mb-2">
-              📋 Message Preview
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-stone-600">Type:</span>{' '}
-                <span className="font-medium">
-                  {messageType === 'announcement' ? 'Announcement' : 'Direct Message'}
-                </span>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-purple-800 mb-2">Message Preview</h3>
+            <div className="text-sm text-purple-700">
+              <div className="mb-1">
+                <strong>Recipients:</strong> {preview.recipientCount} participant{preview.recipientCount !== 1 ? 's' : ''}
               </div>
-              <div>
-                <span className="text-stone-600">Recipients:</span>{' '}
-                <span className="font-medium">{preview.recipientCount}</span>
-                {preview.recipients.length > 0 && (
-                  <div className="mt-1 text-xs text-stone-500">
-                    {preview.recipients.join(', ')}
-                    {preview.recipientCount > preview.recipients.length && 
-                      ` and ${preview.recipientCount - preview.recipients.length} more...`
-                    }
-                  </div>
-                )}
-              </div>
-              {message.trim() && (
-                <div>
-                  <span className="text-stone-600">Message:</span>
-                  <div className="mt-1 p-2 bg-white rounded border text-sm">
-                    {message.trim()}
-                  </div>
+              {preview.recipients.length > 0 && (
+                <div className="mb-1">
+                  <strong>To:</strong> {preview.recipients.join(', ')}
+                  {preview.recipientCount > preview.recipients.length && (
+                    <span className="text-purple-600"> (+{preview.recipientCount - preview.recipients.length} more)</span>
+                  )}
                 </div>
               )}
+              <div>
+                <strong>Type:</strong> {messageType === 'announcement' ? 'Announcement' : 'Direct Message'}
+              </div>
             </div>
           </div>
         )}
@@ -294,7 +261,7 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
           <Button
             onClick={handleSendMessage}
             disabled={loading || !message.trim() || (messageType === 'direct' && selectedParticipants.length === 0)}
-            className="flex items-center"
+            className="min-w-32"
           >
             {loading ? (
               <>
@@ -303,7 +270,7 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
               </>
             ) : (
               <>
-                <span className="mr-2">📨</span>
+                <span className="mr-2">📤</span>
                 Send Message
               </>
             )}

@@ -1,11 +1,11 @@
 import { supabase } from './client'
 import { getCurrentUser } from './auth'
-import type { EventGuestInsert, EventGuestUpdate } from './types'
+import type { EventParticipantInsert, EventParticipantUpdate } from './types'
 
-// Guest database helpers
-export const getEventGuests = async (eventId: string) => {
+// Event participant database helpers
+export const getEventParticipants = async (eventId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .select(`
       *,
       user:public_user_profiles(*)
@@ -14,49 +14,36 @@ export const getEventGuests = async (eventId: string) => {
     .order('created_at', { ascending: true })
 }
 
-// Guest lookup by phone for event access
-export const findGuestByPhone = async (eventId: string, phone: string) => {
+// Participant lookup by user for event access
+export const findParticipantByUser = async (eventId: string, userId: string) => {
   return await supabase
-    .from('event_guests')
+    .from('event_participants')
     .select('*')
     .eq('event_id', eventId)
-    .eq('phone', phone)
+    .eq('user_id', userId)
     .single()
 }
 
-// Link guest record to authenticated user account
-export const linkGuestToUser = async (eventId: string, phone: string) => {
-  const { user } = await getCurrentUser()
-  if (!user) throw new Error('No authenticated user')
-
+// Create event participant
+export const createEventParticipant = async (participantData: EventParticipantInsert) => {
   return await supabase
-    .from('event_guests')
-    .update({ user_id: user.id })
-    .eq('event_id', eventId)
-    .eq('phone', phone)
+    .from('event_participants')
+    .insert(participantData)
     .select()
     .single()
 }
 
-export const createEventGuest = async (guestData: EventGuestInsert) => {
+export const updateEventParticipant = async (participantId: string, participantData: EventParticipantUpdate) => {
   return await supabase
-    .from('event_guests')
-    .insert(guestData)
+    .from('event_participants')
+    .update(participantData)
+    .eq('id', participantId)
     .select()
     .single()
 }
 
-export const updateEventGuest = async (guestId: string, guestData: EventGuestUpdate) => {
-  return await supabase
-    .from('event_guests')
-    .update(guestData)
-    .eq('id', guestId)
-    .select()
-    .single()
-}
-
-// Real-time subscription for guests
-export const subscribeToEventGuests = (
+// Real-time subscription for event participants
+export const subscribeToEventParticipants = (
   eventId: string,
   callback: (payload: { 
     eventType: 'INSERT' | 'UPDATE' | 'DELETE'
@@ -65,13 +52,13 @@ export const subscribeToEventGuests = (
   }) => void
 ) => {
   return supabase
-    .channel(`event-guests-${eventId}`)
+    .channel(`event-participants-${eventId}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
-        table: 'event_guests',
+        table: 'event_participants',
         filter: `event_id=eq.${eventId}`,
       },
       callback
