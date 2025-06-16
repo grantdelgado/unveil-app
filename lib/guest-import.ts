@@ -2,7 +2,7 @@ import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { isValidEmail, isValidPhoneNumber, normalizePhoneNumber } from './utils'
-import type { EventGuestInsert } from './supabase'
+import type { EventParticipantInsert } from './supabase'
 
 // Guest import validation schema - phone is now required, name is optional
 export const guestImportSchema = z.object({
@@ -316,16 +316,13 @@ export const validateImportedGuests = (
 export const convertToEventGuests = (
   guests: GuestImportData[],
   eventId: string
-): EventGuestInsert[] => {
+): EventParticipantInsert[] => {
   return guests.map(guest => ({
     event_id: eventId,
-    phone: normalizePhoneNumber(guest.phone), // Store in normalized format
-    guest_name: guest.guest_name || guest.phone, // Fallback to phone if no name
-    guest_email: guest.guest_email || null,
-    notes: guest.notes || null,
-    guest_tags: guest.guest_tags || null,
-    rsvp_status: guest.rsvp_status || 'Pending',
-    user_id: null, // Will be linked when guest signs up
+    user_id: '', // Placeholder - will be updated when user is created
+    role: 'guest' as const,
+    rsvp_status: (guest.rsvp_status?.toLowerCase() || 'pending') as 'attending' | 'declined' | 'maybe' | 'pending',
+    notes: guest.notes || null
   }))
 }
 

@@ -19,7 +19,7 @@ import {
 } from '@/components/features/host-dashboard'
 import { WelcomeBanner } from '@/components/features/events'
 
-type Event = Database['public']['Tables']['events_new']['Row']
+type Event = Database['public']['Tables']['events']['Row']
 
 export default function EventDashboardPage() {
   const params = useParams()
@@ -50,7 +50,7 @@ export default function EventDashboardPage() {
 
         // Get event details
         const { data: eventData, error: eventError } = await supabase
-          .from('events_new')
+          .from('events')
           .select('*')
           .eq('id', eventId)
           .eq('host_user_id', user.id)

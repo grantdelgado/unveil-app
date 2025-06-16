@@ -24,7 +24,7 @@ export function BottomNavigation({ eventId, role, className }: BottomNavigationP
     async function fetchUnreadCount() {
       try {
         const { data: messages } = await supabase
-          .from('messages_new')
+          .from('messages')
           .select('id')
           .eq('event_id', eventId)
           .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
@@ -45,7 +45,7 @@ export function BottomNavigation({ eventId, role, className }: BottomNavigationP
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages_new',
+                      table: 'messages',
           filter: `event_id=eq.${eventId}`
         },
         () => {

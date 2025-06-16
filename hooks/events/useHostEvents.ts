@@ -28,13 +28,13 @@ export function useHostEvents(userId: string | null): UseHostEventsReturn {
       setError(null)
 
       // Fetch hosted events
-      const { data: hostData, error: hostError } = await getHostEvents(userId)
+      const hostResult = await getHostEvents(userId)
 
-      if (hostError) {
-        throw hostError
+      if (hostResult?.error) {
+        throw new Error(hostResult.error.message)
       }
 
-      setHostedEvents(hostData || [])
+      setHostedEvents(hostResult?.data || [])
       setLoading(false)
     }, 'useHostEvents.fetchHostedEvents')
 

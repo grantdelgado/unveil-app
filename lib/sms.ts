@@ -7,8 +7,8 @@ const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER
 const twilioMessagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID
 
 // Initialize Twilio client lazily
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let twilioClient: any = null
+ 
+let twilioClient: ReturnType<typeof import('twilio')> | null = null
 
 const getTwilioClient = async () => {
   if (!twilioClient && accountSid && authToken) {
@@ -186,10 +186,9 @@ export async function sendRSVPReminder(
         id, 
         role, 
         rsvp_status,
-        user:public_user_profiles(phone, full_name)
+        user:public_user_profiles(id, full_name)
       `)
       .eq('event_id', eventId)
-      .not('user.phone', 'is', null)
 
     if (guestIds && guestIds.length > 0) {
       query = query.in('id', guestIds)
@@ -209,22 +208,19 @@ export async function sendRSVPReminder(
     }
 
     // Create reminder message
-    const hostName = (event.host as { full_name?: string })?.full_name || 'Your host'
-    const eventDate = new Date(event.event_date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    })
+    // const hostName = (event.host as { full_name?: string })?.full_name || 'Your host'
+    // const eventDate = new Date(event.event_date).toLocaleDateString('en-US', {
+    //   weekday: 'long',
+    //   month: 'long',
+    //   day: 'numeric'
+    // })
 
-    const messages: SMSMessage[] = participants
-      .filter(participant => participant.user?.phone)
-      .map(participant => ({
-        to: participant.user!.phone!,
-        message: createRSVPReminderMessage(participant.user?.full_name, event.title, eventDate, hostName),
-        eventId,
-        guestId: participant.id,
-        messageType: 'rsvp_reminder' as const
-      }))
+    // Note: SMS functionality requires phone numbers which aren't available in public_user_profiles
+    // This is a placeholder implementation for the simplified schema
+    const messages: SMSMessage[] = []
+    
+    console.log('📱 SMS Reminder would be sent to', participants.length, 'participants')
+    console.log('⚠️ SMS functionality requires phone access - not available in simplified schema')
 
     const result = await sendBulkSMS(messages)
     return { sent: result.sent, failed: result.failed }
@@ -258,15 +254,14 @@ export async function sendEventAnnouncement(
       throw new Error('Event not found')
     }
 
-    // Fetch participants with phone numbers
+    // Fetch participants - Note: phone not available in public_user_profiles for privacy
     let query = supabase
       .from('event_participants')
       .select(`
         id,
-        user:public_user_profiles(phone, full_name)
+        user:public_user_profiles(id, full_name)
       `)
       .eq('event_id', eventId)
-      .not('user.phone', 'is', null)
 
     if (targetGuestIds && targetGuestIds.length > 0) {
       query = query.in('id', targetGuestIds)
@@ -282,17 +277,14 @@ export async function sendEventAnnouncement(
       return { sent: 0, failed: 0 }
     }
 
-    const hostName = (event.host as { full_name?: string })?.full_name || 'Your host'
+    // const hostName = (event.host as { full_name?: string })?.full_name || 'Your host'
     
-    const messages: SMSMessage[] = participants
-      .filter(participant => participant.user?.phone)
-      .map(participant => ({
-        to: participant.user!.phone!,
-        message: createAnnouncementMessage(participant.user?.full_name, announcement, event.title, hostName),
-        eventId,
-        guestId: participant.id,
-        messageType: 'announcement' as const
-      }))
+    // Note: SMS functionality requires phone numbers which aren't available in public_user_profiles
+    // This is a placeholder implementation for the simplified schema
+    const messages: SMSMessage[] = []
+    
+    console.log('📱 SMS Announcement would be sent to', participants.length, 'participants')
+    console.log('⚠️ SMS functionality requires phone access - not available in simplified schema')
 
     const result = await sendBulkSMS(messages)
     return { sent: result.sent, failed: result.failed }
@@ -330,6 +322,7 @@ function formatPhoneNumber(phone: string): string | null {
 /**
  * Create personalized RSVP reminder message
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function createRSVPReminderMessage(
   guestName: string | null,
   eventTitle: string,
@@ -346,6 +339,7 @@ Reply STOP to opt out.`
 /**
  * Create personalized announcement message
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function createAnnouncementMessage(
   guestName: string | null,
   announcement: string,
@@ -359,6 +353,33 @@ function createAnnouncementMessage(
 ${announcement}
 
 Reply STOP to opt out.`
+}
+
+/**
+ * Log SMS to database for tracking (simplified implementation)
+ */
+async function logSMSToDatabase(logData: {
+  eventId: string
+  guestId?: string
+  phoneNumber: string
+  content: string
+  messageType?: string
+  twilioSid?: string
+  status: 'sent' | 'failed'
+  errorMessage?: string
+}) {
+  try {
+    // In the simplified schema, we don't have SMS logging tables
+    // This is a stub for future implementation
+    console.log('📝 SMS Log:', {
+      event: logData.eventId,
+      phone: logData.phoneNumber.slice(-4), // Only log last 4 digits for privacy
+      status: logData.status,
+      type: logData.messageType
+    })
+  } catch (error) {
+    console.warn('⚠️ Failed to log SMS to database:', error)
+  }
 }
 
  

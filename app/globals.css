@@ -2,13 +2,14 @@
 
 :root {
   /* Brand Colors - Unveil Palette */
-  --color-bg: #FAFAFA;
+  --color-bg: #FFFFFF; /* Pure white background */
   --color-text: #333333;
   --color-muted: #888888;
   
   /* Brand Accents */
   --color-primary: #F7E8E0; /* muted rose */
   --color-accent: #D4C2FB; /* dusk lavender */
+  --color-brand-pink: #FF89A6; /* Primary brand pink for Unveil header */
   --color-success: #CCE8D4;
   --color-error: #FDDCDC;
   
@@ -28,13 +29,14 @@
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
   --font-sans: var(--font-sans);
+  --color-brand-pink: var(--color-brand-pink);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #1a1a1a;
-    --color-text: #ededed;
-    --color-muted: #999999;
+    --color-bg: #FFFFFF; /* Keep white even in dark mode for brand consistency */
+    --color-text: #333333;
+    --color-muted: #666666;
   }
 }
 
@@ -43,6 +45,11 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   line-height: 1.6;
+}
+
+/* Brand pink utility class */
+.text-brand-pink {
+  color: var(--color-brand-pink);
 }
 
 /* Safe area support for devices with home indicators */

@@ -52,4 +52,46 @@ export interface MessageWithSender extends Message {
 
 export interface MediaWithUploader extends Media {
   uploader: PublicUserProfile | null
+}
+
+// Utility types for consistent service responses
+export type ServiceResponse<T> = {
+  data: T | null
+  error: Error | null
+}
+
+export type ServiceResponseArray<T> = {
+  data: T[] | null
+  error: Error | null
+}
+
+// Enhanced types for better type safety
+export type EventParticipantWithUserProfile = EventParticipantWithUser & {
+  user: {
+    id: string
+    phone: string
+    full_name: string | null
+    email: string | null
+    avatar_url: string | null
+  } | null
+}
+
+export type MediaWithUploaderProfile = MediaWithUploader & {
+  uploader: {
+    id: string
+    phone: string
+    full_name: string | null
+    email: string | null
+    avatar_url: string | null
+  } | null
+}
+
+export type MessageWithSenderProfile = MessageWithSender & {
+  sender: {
+    id: string
+    phone: string
+    full_name: string | null
+    email: string | null
+    avatar_url: string | null
+  } | null
 } 

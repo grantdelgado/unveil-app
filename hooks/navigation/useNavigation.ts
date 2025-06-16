@@ -26,7 +26,11 @@ export function useNavigation(): NavigationContext {
 
       // Extract event ID from pathname
       const eventIdMatch = pathname.match(/\/events\/([^\/]+)/)
-      const eventId = eventIdMatch ? eventIdMatch[1] : null
+      const extractedEventId = eventIdMatch ? eventIdMatch[1] : null
+      
+      // Validate that the extracted ID is a valid UUID, not a route segment like "create"
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      const eventId = extractedEventId && uuidRegex.test(extractedEventId) ? extractedEventId : null
 
       if (!eventId) {
         setNavigationContext({
@@ -57,7 +61,7 @@ export function useNavigation(): NavigationContext {
           .single()
 
         if (participantAssignment) {
-          const event = participantAssignment.events as any
+          const event = participantAssignment.events as { title: string }
           setNavigationContext({
             eventId,
             userRole: participantAssignment.role as 'host' | 'guest',

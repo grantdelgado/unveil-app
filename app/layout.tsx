@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthSessionWatcher, ProfileAvatar } from '@/components/features/auth'
+import { AuthSessionWatcher } from '@/components/features/auth/AuthSessionWatcher'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { NavigationLayout } from '@/components/features/navigation';
 import { APP_CONFIG } from '@/lib/constants';
 import { Suspense } from 'react';
-import { DevToolsProvider } from '@/components/dev/TestUserCreator';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,12 +29,7 @@ export default function RootLayout({
           <Suspense>
             <AuthSessionWatcher>
               <NavigationLayout>
-                <div className="absolute top-4 right-4 z-50">
-                  <ProfileAvatar />
-                </div>
-                <DevToolsProvider>
-                  {children}
-                </DevToolsProvider>
+                {children}
               </NavigationLayout>
             </AuthSessionWatcher>
           </Suspense>

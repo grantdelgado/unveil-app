@@ -1,65 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-// import type { User } from '@supabase/supabase-js' // Not needed
-
-interface UserEvent {
-  event_id: string
-  title: string
-  event_date: string
-  location: string | null
-  user_role: string | null
-  rsvp_status: string | null
-  is_primary_host: boolean
-}
+import { useUserEventsSorted } from '@/hooks/events/useUserEventsSorted'
 
 export default function SelectEventPage() {
-  // const [user, setUser] = useState<User | null>(null) // Removed as not needed
-  const [events, setEvents] = useState<UserEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { events, loading, error, refetch } = useUserEventsSorted()
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchUserAndEvents = async () => {
-      try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        
-        if (userError || !user) {
-          router.push('/login')
-          return
-        }
-        
-        // setUser(user) // Not needed as we only check authentication
-
-        // Get user's events with roles using the simplified RLS function
-        const { data: userEvents, error: eventsError } = await supabase
-          .rpc('get_user_events')
-
-        if (eventsError) {
-          console.error('Error fetching events:', eventsError)
-          setError('Failed to load your events. Please try again.')
-          return
-        }
-
-        setEvents(userEvents || [])
-      } catch (err) {
-        console.error('Unexpected error:', err)
-        setError('An unexpected error occurred. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUserAndEvents()
-  }, [router])
-
-  const handleEventSelect = (event: UserEvent) => {
+  const handleEventSelect = (event: { event_id: string; user_role: string }) => {
     if (!event.user_role) {
-      setError('Unable to determine your role for this event.')
+      console.error('Unable to determine user role for this event.')
       return
     }
 
@@ -69,7 +19,7 @@ export default function SelectEventPage() {
     } else if (event.user_role === 'guest') {
       router.push(`/guest/events/${event.event_id}/home`)
     } else {
-      setError('Invalid role for this event.')
+      console.error('Invalid role for this event.')
     }
   }
 
@@ -86,7 +36,7 @@ export default function SelectEventPage() {
     }
   }
 
-  const getRoleDisplay = (event: UserEvent) => {
+  const getRoleDisplay = (event: { user_role: string; is_primary_host: boolean }) => {
     if (event.is_primary_host) {
       return { text: 'Host', color: 'bg-rose-100 text-rose-800', icon: '👑' }
     } else if (event.user_role === 'host') {
@@ -109,9 +59,13 @@ export default function SelectEventPage() {
     }
   }
 
+  // Separate events by role
+  const hostedEvents = events.filter(event => event.user_role === 'host')
+  const guestEvents = events.filter(event => event.user_role === 'guest')
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-stone-600">Loading your events...</p>
@@ -121,133 +75,165 @@ export default function SelectEventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50">
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-6 py-8 max-w-2xl">
+        {/* App Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-stone-800 mb-2 tracking-tight">
-            Welcome back
-          </h1>
-          <div className="w-16 h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent mx-auto mb-4"></div>
-          <p className="text-stone-600">
-            Choose an event to access your personalized experience
-          </p>
+          <h1 className="text-3xl font-semibold text-brand-pink mb-6 tracking-tight">Unveil</h1>
+        </div>
+
+        {/* Profile Button - simplified to icon only */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => router.push('/profile')}
+            className="w-8 h-8 bg-stone-300 rounded-full hover:bg-stone-400 transition-colors"
+            aria-label="Go to profile"
+          >
+          </button>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="max-w-md mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700 text-sm text-center">{error}</p>
+            <button
+              onClick={refetch}
+              className="mt-2 w-full px-4 py-2 text-red-600 hover:text-red-800 text-sm font-medium"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
-        {/* Events List */}
-        <div className="max-w-2xl mx-auto">
-          {events.length === 0 ? (
+        {/* Events Sections */}
+        <div className="space-y-8">
+          {/* No Events State */}
+          {events.length === 0 && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎭</div>
-              <h2 className="text-xl font-semibold text-stone-800 mb-2">No events found</h2>
+              <h2 className="text-xl font-semibold text-stone-800 mb-2">You don&apos;t have any events yet.</h2>
               <p className="text-stone-600 mb-6">
-                You haven&apos;t been invited to any events yet, or you haven&apos;t created any events.
+                Create an event or wait to be invited to one.
               </p>
-              <button
-                onClick={() => router.push('/host/events/create')}
-                className="inline-flex items-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 transition-all duration-200"
-              >
-                Create Your First Event
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {events.map((event) => {
-                const role = getRoleDisplay(event)
-                const rsvp = getRSVPDisplay(event.rsvp_status)
-                
-                return (
-                  <button
-                    key={event.event_id}
-                    onClick={() => handleEventSelect(event)}
-                    className="w-full p-6 bg-white rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-stone-800 group-hover:text-stone-900">
-                            {event.title}
-                          </h3>
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
-                            <span>{role.icon}</span>
-                            {role.text}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-1 text-sm text-stone-600">
-                          <div className="flex items-center gap-2">
-                            <span>📅</span>
-                            <span>{formatEventDate(event.event_date)}</span>
-                          </div>
-                          
-                          {event.location && (
-                            <div className="flex items-center gap-2">
-                              <span>📍</span>
-                              <span>{event.location}</span>
-                            </div>
-                          )}
-                          
-                          {event.user_role === 'guest' && (
-                            <div className="flex items-center gap-2">
-                              <span>✉️</span>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${rsvp.color}`}>
-                                RSVP: {rsvp.text}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="text-stone-400 group-hover:text-stone-600 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
+              <p className="text-stone-500 text-sm">
+                Visit your profile to create or manage events.
+              </p>
             </div>
           )}
-        </div>
 
-        {/* Footer Actions */}
-        <div className="max-w-2xl mx-auto mt-8 pt-6 border-t border-stone-200">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push('/host/events/create')}
-              className="inline-flex items-center justify-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 transition-all duration-200"
-            >
-              <span className="mr-2">+</span>
-              Create New Event
-            </button>
-            
-            <button
-              onClick={() => router.push('/profile')}
-              className="inline-flex items-center justify-center px-6 py-3 bg-white text-stone-700 font-medium rounded-lg border border-stone-200 hover:bg-stone-50 transition-all duration-200"
-            >
-              <span className="mr-2">👤</span>
-              View Profile
-            </button>
-            
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut()
-                router.push('/login')
-              }}
-              className="inline-flex items-center justify-center px-6 py-3 bg-white text-stone-700 font-medium rounded-lg border border-stone-200 hover:bg-stone-50 transition-all duration-200"
-            >
-              <span className="mr-2">🚪</span>
-              Sign Out
-            </button>
-          </div>
+          {/* Host Events Section */}
+          {hostedEvents.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-stone-800 mb-4">Your Event</h2>
+              <div className="space-y-4">
+                {hostedEvents.map((event) => {
+                  const role = getRoleDisplay(event)
+                  
+                  return (
+                    <button
+                      key={event.event_id}
+                      onClick={() => handleEventSelect(event)}
+                      className="w-full p-6 bg-white rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-stone-800 group-hover:text-stone-900">
+                              {event.title}
+                            </h3>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                              <span>{role.icon}</span>
+                              {role.text}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1 text-sm text-stone-600">
+                            <div className="flex items-center gap-2">
+                              <span>📅</span>
+                              <span>{formatEventDate(event.event_date)}</span>
+                            </div>
+                            
+                            {event.location && (
+                              <div className="flex items-center gap-2">
+                                <span>📍</span>
+                                <span>{event.location}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-stone-400 group-hover:text-stone-600 transition-colors">
+                          →
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Guest Events Section */}
+          {guestEvents.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-stone-800 mb-4">Invited To</h2>
+              <div className="space-y-4">
+                {guestEvents.map((event) => {
+                  const role = getRoleDisplay(event)
+                  const rsvp = getRSVPDisplay(event.rsvp_status)
+                  
+                  return (
+                    <button
+                      key={event.event_id}
+                      onClick={() => handleEventSelect(event)}
+                      className="w-full p-6 bg-white rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-stone-800 group-hover:text-stone-900">
+                              {event.title}
+                            </h3>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                              <span>{role.icon}</span>
+                              {role.text}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1 text-sm text-stone-600">
+                            <div className="flex items-center gap-2">
+                              <span>📅</span>
+                              <span>{formatEventDate(event.event_date)}</span>
+                            </div>
+                            
+                            {event.location && (
+                              <div className="flex items-center gap-2">
+                                <span>📍</span>
+                                <span>{event.location}</span>
+                              </div>
+                            )}
+                            
+                            {event.rsvp_status && (
+                              <div className="flex items-center gap-2">
+                                <span>✉️</span>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${rsvp.color}`}>
+                                  {rsvp.text}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-stone-400 group-hover:text-stone-600 transition-colors">
+                          →
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

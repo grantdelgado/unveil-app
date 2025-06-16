@@ -1,5 +1,4 @@
 import { supabase } from './client'
-import { getCurrentUser } from './auth'
 import type { EventParticipantInsert, EventParticipantUpdate } from './types'
 
 // Event participant database helpers

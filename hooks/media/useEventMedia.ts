@@ -1,8 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { 
-  type Media,
-  type MediaInsert,
   type MediaWithUploader 
 } from '@/lib/supabase/types'
 import { getEventMedia, uploadMedia as uploadMediaService } from '@/services/media'
@@ -17,7 +15,7 @@ interface UseEventMediaReturn {
   uploadMedia: (mediaData: {
     event_id: string
     storage_path: string
-    media_type: 'photo' | 'video'
+    media_type: 'image' | 'video'
     uploader_user_id: string
     caption?: string
   }) => Promise<{ success: boolean; error: string | null }>
@@ -49,21 +47,21 @@ export function useEventMedia(eventId: string | null): UseEventMediaReturn {
         return
       }
 
-      const { data, error: mediaError } = await getEventMedia(eventId)
+      const result = await getEventMedia(eventId)
 
-      if (mediaError) {
+      if (result.error) {
         // Handle permission errors gracefully
-        if (mediaError.code === 'PGRST301' || mediaError.message?.includes('permission')) {
+        if (result.error.message?.includes('permission')) {
           console.warn('⚠️ No permission to access media for this event')
           setMedia([])
           setLoading(false)
           return
         }
-        throw new Error(mediaError.message || 'Failed to fetch media')
+        throw new Error(result.error.message || 'Failed to fetch media')
       }
 
       // Map the data to match MediaWithUploader type
-      const mappedData = (data || []).map(item => ({
+      const mappedData = (result.data || []).map((item: MediaWithUploader) => ({
         ...item,
         uploader: item.uploader || null
       })) as MediaWithUploader[]
@@ -79,15 +77,15 @@ export function useEventMedia(eventId: string | null): UseEventMediaReturn {
   const uploadMedia = useCallback(async (mediaData: {
     event_id: string
     storage_path: string
-    media_type: 'photo' | 'video'
+    media_type: 'image' | 'video'
     uploader_user_id: string
     caption?: string
   }) => {
     const wrappedUpload = withErrorHandling(async () => {
-      const { data, error } = await uploadMediaService(mediaData)
+      const result = await uploadMediaService(mediaData)
 
-      if (error) {
-        throw new Error('Failed to upload media')
+      if (result.error) {
+        throw new Error(result.error.message || 'Failed to upload media')
       }
 
       // Refresh media list after successful upload

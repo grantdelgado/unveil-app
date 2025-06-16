@@ -64,7 +64,7 @@ export function GuestImportWizard({
 
         // First, check if user already exists
         const { data: existingUser } = await supabase
-          .from('users_new')
+          .from('users')
           .select('id')
           .eq('phone', formattedPhone)
           .single()
@@ -75,8 +75,8 @@ export function GuestImportWizard({
           userId = existingUser.id
         } else {
           // Create new user
-          const { data: newUser, error: userError } = await supabase
-            .from('users_new')
+                      const { data: newUser, error: userError } = await supabase
+              .from('users')
             .insert({
               phone: formattedPhone,
               full_name: guest.fullName.trim(),

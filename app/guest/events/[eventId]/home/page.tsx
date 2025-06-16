@@ -46,7 +46,7 @@ export default function GuestEventHomePage() {
   }, [])
 
   // Use the custom hook to fetch event and guest data
-  const { event, guestInfo, loading, error, updateRSVP } = useEventDetails(eventId, currentUserId)
+  const { event, participantInfo, loading, error, updateRSVP } = useEventDetails(eventId, currentUserId)
 
   const handleRSVPUpdate = async (status: string) => {
     const result = await updateRSVP(status)
@@ -60,7 +60,7 @@ export default function GuestEventHomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-stone-600">Loading your invitation...</p>
@@ -71,7 +71,7 @@ export default function GuestEventHomePage() {
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <h1 className="text-2xl font-semibold text-stone-800 mb-2">We couldn&apos;t find this celebration</h1>
           <p className="text-stone-600 mb-6">{error?.message || 'This wedding hub may have been moved or is no longer available.'}</p>
@@ -114,7 +114,7 @@ export default function GuestEventHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-stone-200/50 transition-all duration-300 ${
         isScrolled 
@@ -146,8 +146,8 @@ export default function GuestEventHomePage() {
               </div>
               <div className={`px-4 py-2 rounded-full border font-medium transition-all duration-300 ${
                 isScrolled ? 'text-xs px-3 py-1' : 'text-sm'
-              } ${getRSVPStatusColor(guestInfo?.rsvp_status || null)}`}>
-                {getRSVPStatusText(guestInfo?.rsvp_status || null)}
+              } ${getRSVPStatusColor(participantInfo?.rsvp_status || null)}`}>
+                {getRSVPStatusText(participantInfo?.rsvp_status || null)}
               </div>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function GuestEventHomePage() {
                 <button
                   onClick={() => handleRSVPUpdate('Attending')}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    guestInfo?.rsvp_status === 'Attending'
+                    participantInfo?.rsvp_status === 'Attending'
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300'
                   }`}
@@ -247,7 +247,7 @@ export default function GuestEventHomePage() {
                 <button
                   onClick={() => handleRSVPUpdate('Maybe')}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    guestInfo?.rsvp_status === 'Maybe'
+                    participantInfo?.rsvp_status === 'Maybe'
                       ? 'bg-amber-600 text-white shadow-sm'
                       : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 hover:border-amber-300'
                   }`}
@@ -258,7 +258,7 @@ export default function GuestEventHomePage() {
                 <button
                   onClick={() => handleRSVPUpdate('Declined')}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                    guestInfo?.rsvp_status === 'Declined'
+                    participantInfo?.rsvp_status === 'Declined'
                       ? 'bg-stone-600 text-white shadow-sm'
                       : 'bg-stone-50 text-stone-700 hover:bg-stone-100 border border-stone-200 hover:border-stone-300'
                   }`}

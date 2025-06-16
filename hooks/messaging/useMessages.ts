@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { 
-  type MessageInsert,
   type MessageWithSender 
 } from '@/lib/supabase/types'
-import { getEventMessages, sendMessage as sendMessageService } from '@/services/messaging'
+import { sendMessage as sendMessageService } from '@/services/messaging'
 import { subscribeToEventMessages } from '@/lib/supabase/messaging'
 import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
@@ -71,7 +70,7 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
         messagesData?.map(m => m.sender_user_id).filter((id): id is string => Boolean(id)) || []
       ))
 
-      const sendersMap = new Map<string, any>()
+      const sendersMap = new Map<string, { avatar_url: string | null; full_name: string | null; id: string | null }>()
 
       for (const senderId of uniqueSenderIds) {
         try {
@@ -84,7 +83,7 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
           if (!senderError && senderData) {
             sendersMap.set(senderId, senderData)
           }
-        } catch (err) {
+        } catch {
           // Silently handle individual sender fetch failures
         }
       }
@@ -98,7 +97,6 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
       setMessages(messagesWithSenders)
       setLoading(false)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch messages'
       console.warn('⚠️ useMessages fetchMessages error:', err)
       // Don't set error state for permission issues, just return empty array
       setMessages([])
@@ -113,7 +111,7 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
     message_type?: 'text' | 'announcement' | 'system'
   }) => {
     const wrappedSend = withErrorHandling(async () => {
-      const { data, error } = await sendMessageService(messageData)
+      const { error } = await sendMessageService(messageData)
 
       if (error) {
         throw new Error('Failed to send message')

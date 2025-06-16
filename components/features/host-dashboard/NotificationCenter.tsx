@@ -45,13 +45,13 @@ export function NotificationCenter({ eventId }: NotificationCenterProps) {
 
       // Process guest updates (RSVP changes) - using hook data
       guests?.forEach((guest) => {
-        if (guest.rsvp_status && guest.updated_at && guest.updated_at > dayAgo.toISOString()) {
+        if (guest.rsvp_status && guest.created_at && guest.created_at > dayAgo.toISOString()) {
           notificationItems.push({
             id: `guest-${guest.id}`,
             type: 'rsvp',
             title: getRSVPTitle(guest.rsvp_status),
-            description: `${guest.guest_name || 'A guest'} ${getRSVPDescription(guest.rsvp_status)}`,
-            timestamp: guest.updated_at,
+            description: `${guest.user?.full_name || 'A guest'} ${getRSVPDescription(guest.rsvp_status)}`,
+            timestamp: guest.created_at,
             isRead: false,
             icon: getRSVPIcon(guest.rsvp_status),
             color: getRSVPColor(guest.rsvp_status)
@@ -113,40 +113,57 @@ export function NotificationCenter({ eventId }: NotificationCenterProps) {
     fetchNotifications()
     
     // Set up real-time subscriptions
-    const guestChannel = supabase
-      .channel(`guest-updates-${eventId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'event_guests',
-        filter: `event_id=eq.${eventId}`
-      }, fetchNotifications)
-      .subscribe()
-
-    const mediaChannel = supabase
-      .channel(`media-updates-${eventId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'media',
-        filter: `event_id=eq.${eventId}`
-      }, fetchNotifications)
-      .subscribe()
-
-    const messageChannel = supabase
-      .channel(`message-updates-${eventId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `event_id=eq.${eventId}`
-      }, fetchNotifications)
-      .subscribe()
+    const channel = supabase
+      .channel('event-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'event_participants',
+          filter: `event_id=eq.${eventId}`
+        },
+        (payload) => {
+          console.log('New participant:', payload)
+          setNotifications(prev => [{
+            id: Date.now().toString(),
+            type: 'general' as const,
+            title: 'New Participant',
+            description: 'A new participant joined the event',
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            icon: '👋',
+            color: 'text-emerald-600'
+          }, ...prev])
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'event_participants',
+          filter: `event_id=eq.${eventId}`
+        },
+        (payload) => {
+          console.log('Participant updated:', payload)
+          if (payload.new.rsvp_status !== payload.old?.rsvp_status) {
+            setNotifications(prev => [{
+              id: Date.now().toString(),
+              type: 'rsvp' as const,
+              title: getRSVPTitle(payload.new.rsvp_status),
+              description: `Participant ${getRSVPDescription(payload.new.rsvp_status)}`,
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              icon: getRSVPIcon(payload.new.rsvp_status),
+              color: getRSVPColor(payload.new.rsvp_status)
+            }, ...prev])
+          }
+        }
+      )
 
     return () => {
-      supabase.removeChannel(guestChannel)
-      supabase.removeChannel(mediaChannel)
-      supabase.removeChannel(messageChannel)
+      supabase.removeChannel(channel)
     }
   }, [fetchNotifications, eventId])
 
@@ -186,8 +203,8 @@ export function NotificationCenter({ eventId }: NotificationCenterProps) {
     switch (status.toLowerCase()) {
       case 'attending': return 'text-emerald-600'
       case 'declined': return 'text-red-600'
-      case 'maybe': return 'text-amber-600'
-      default: return 'text-stone-600'
+      case 'maybe': return 'text-yellow-600'
+      default: return 'text-gray-600'
     }
   }
 

@@ -1,4 +1,83 @@
 import { supabase } from '@/lib/supabase/client'
+import { validateMediaFile, MEDIA_CONSTRAINTS } from './media'
+import type { MediaType } from '@/lib/supabase/types'
+
+// Storage response types for consistency
+export type StorageUploadResponse = {
+  data: {
+    id: string
+    path: string
+    fullPath: string
+  } | null
+  error: Error | null
+  metadata?: {
+    size: number
+    type: string
+    name: string
+  }
+}
+
+export type StorageUrlResponse = {
+  data: {
+    publicUrl: string
+  }
+}
+
+// Storage error handling
+const handleStorageError = (error: unknown, context: string) => {
+  console.error(`Storage error in ${context}:`, error)
+  
+  const storageError = error as { message?: string }
+  
+  if (storageError.message?.includes('File size too large')) {
+    throw new Error(`File too large. Maximum size is ${MEDIA_CONSTRAINTS.MAX_FILE_SIZE_MB}MB`)
+  }
+  
+  if (storageError.message?.includes('Invalid file type')) {
+    throw new Error('Invalid file type. Please upload an image or video file.')
+  }
+  
+  if (storageError.message?.includes('Bucket not found')) {
+    throw new Error('Storage bucket not found')
+  }
+  
+  if (storageError.message?.includes('Object not found')) {
+    throw new Error('File not found')
+  }
+  
+  if (storageError.message?.includes('Insufficient privileges')) {
+    throw new Error('You do not have permission to access this file')
+  }
+  
+  throw new Error(storageError.message || 'Storage operation failed')
+}
+
+// Enhanced file validation for storage
+export const validateFileForStorage = (file: File): { 
+  isValid: boolean; 
+  error?: string; 
+  mediaType?: MediaType;
+  metadata?: {
+    size: number;
+    type: string;
+    name: string;
+  }
+} => {
+  const validation = validateMediaFile(file)
+  
+  if (!validation.isValid) {
+    return validation
+  }
+  
+  return {
+    ...validation,
+    metadata: {
+      size: file.size,
+      type: file.type,
+      name: file.name
+    }
+  }
+}
 
 // Storage service functions
 export const uploadFile = async (
@@ -6,12 +85,23 @@ export const uploadFile = async (
   path: string,
   file: File,
   options?: { cacheControl?: string; upsert?: boolean }
-) => {
+): Promise<StorageUploadResponse> => {
   try {
+    // Validate file before upload
+    const validation = validateFileForStorage(file)
+    if (!validation.isValid) {
+      return {
+        data: null,
+        error: new Error(validation.error || 'File validation failed'),
+        metadata: validation.metadata
+      }
+    }
+    
     console.log(`Uploading file to ${bucket}/${path}`, {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
+      mediaType: validation.mediaType
     })
     
     const result = await supabase.storage
@@ -23,35 +113,100 @@ export const uploadFile = async (
       })
     
     console.log('Upload result:', result)
-    return result
+    
+    if (result.error) {
+      return {
+        data: null,
+        error: new Error(result.error.message),
+        metadata: validation.metadata
+      }
+    }
+    
+    return {
+      data: result.data,
+      error: null,
+      metadata: validation.metadata
+    }
   } catch (error) {
-    console.error('Upload exception:', error)
-    throw error
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error('Upload failed'),
+      metadata: undefined
+    }
   }
 }
 
-export const getPublicUrl = (bucket: string, path: string) => {
-  return supabase.storage
-    .from(bucket)
-    .getPublicUrl(path)
+export const getPublicUrl = (bucket: string, path: string): StorageUrlResponse => {
+  try {
+    const result = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path)
+    
+    return result
+  } catch {
+    // Fallback to a basic structure if there's an error
+    return {
+      data: {
+        publicUrl: ''
+      }
+    }
+  }
 }
 
 export const deleteFile = async (bucket: string, path: string) => {
-  return await supabase.storage
-    .from(bucket)
-    .remove([path])
+  try {
+    const result = await supabase.storage
+      .from(bucket)
+      .remove([path])
+    
+    if (result.error) {
+      throw result.error
+    }
+    
+    return result
+  } catch (error) {
+    handleStorageError(error, 'deleteFile')
+  }
 }
 
-export const listFiles = async (bucket: string, path?: string) => {
-  return await supabase.storage
-    .from(bucket)
-    .list(path)
+export const listFiles = async (bucket: string, path?: string, options?: {
+  limit?: number;
+  offset?: number;
+  sortBy?: { column: string; order: 'asc' | 'desc' };
+}) => {
+  try {
+    const result = await supabase.storage
+      .from(bucket)
+      .list(path, {
+        limit: options?.limit || 100,
+        offset: options?.offset || 0,
+        sortBy: options?.sortBy || { column: 'created_at', order: 'desc' }
+      })
+    
+    if (result.error) {
+      throw result.error
+    }
+    
+    return result
+  } catch (error) {
+    handleStorageError(error, 'listFiles')
+  }
 }
 
 export const downloadFile = async (bucket: string, path: string) => {
-  return await supabase.storage
-    .from(bucket)
-    .download(path)
+  try {
+    const result = await supabase.storage
+      .from(bucket)
+      .download(path)
+    
+    if (result.error) {
+      throw result.error
+    }
+    
+    return result
+  } catch (error) {
+    handleStorageError(error, 'downloadFile')
+  }
 }
 
 export const createSignedUrl = async (
@@ -59,17 +214,41 @@ export const createSignedUrl = async (
   path: string, 
   expiresIn: number = 3600
 ) => {
-  return await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, expiresIn)
+  try {
+    const result = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresIn)
+    
+    if (result.error) {
+      throw result.error
+    }
+    
+    return result
+  } catch (error) {
+    handleStorageError(error, 'createSignedUrl')
+  }
 }
 
 export const uploadAvatar = async (userId: string, file: File) => {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${userId}.${fileExt}`
-  const filePath = `avatars/${fileName}`
-  
-  return await uploadFile('avatars', filePath, file, { upsert: true })
+  try {
+    // Validate it's an image
+    const validation = validateFileForStorage(file)
+    if (!validation.isValid) {
+      throw new Error(validation.error)
+    }
+    
+    if (validation.mediaType !== 'image') {
+      throw new Error('Avatar must be an image file')
+    }
+    
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}.${fileExt}`
+    const filePath = `avatars/${fileName}`
+    
+    return await uploadFile('avatars', filePath, file, { upsert: true })
+  } catch (error) {
+    handleStorageError(error, 'uploadAvatar')
+  }
 }
 
 export const uploadEventMedia = async (
@@ -77,10 +256,101 @@ export const uploadEventMedia = async (
   file: File, 
   userId: string
 ) => {
+  try {
+    // Validate file
+    const validation = validateFileForStorage(file)
+    if (!validation.isValid) {
+      throw new Error(validation.error)
+    }
+    
+    const timestamp = Date.now()
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${timestamp}-${userId}.${fileExt}`
+    const filePath = `events/${eventId}/media/${fileName}`
+    
+    const uploadResult = await uploadFile('media', filePath, file)
+    
+    return {
+      ...uploadResult,
+      storagePath: filePath,
+      mediaType: validation.mediaType!,
+      originalName: file.name
+    }
+  } catch (error) {
+    handleStorageError(error, 'uploadEventMedia')
+  }
+}
+
+export const deleteEventMedia = async (eventId: string, fileName: string) => {
+  try {
+    const filePath = `events/${eventId}/media/${fileName}`
+    return await deleteFile('media', filePath)
+  } catch (error) {
+    handleStorageError(error, 'deleteEventMedia')
+  }
+}
+
+export const getEventMediaList = async (eventId: string) => {
+  try {
+    const path = `events/${eventId}/media`
+    return await listFiles('media', path, {
+      sortBy: { column: 'created_at', order: 'desc' }
+    })
+  } catch (error) {
+    handleStorageError(error, 'getEventMediaList')
+  }
+}
+
+// Helper to generate optimized storage paths
+export const generateMediaPath = (eventId: string, userId: string, file: File): string => {
   const timestamp = Date.now()
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${timestamp}-${userId}.${fileExt}`
-  const filePath = `events/${eventId}/media/${fileName}`
-  
-  return await uploadFile('media', filePath, file)
+  const fileExt = file.name.split('.').pop()?.toLowerCase()
+  const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-]/g, '')
+  return `events/${eventId}/media/${timestamp}-${sanitizedUserId}.${fileExt}`
+}
+
+// Helper to extract metadata from file path
+export const parseMediaPath = (path: string): {
+  eventId?: string;
+  fileName?: string;
+  timestamp?: number;
+  userId?: string;
+} => {
+  try {
+    const parts = path.split('/')
+    if (parts.length >= 4 && parts[0] === 'events' && parts[2] === 'media') {
+      const eventId = parts[1]
+      const fileName = parts[3]
+      const [timestampPart, userIdPart] = fileName.split('-')
+      
+      return {
+        eventId,
+        fileName,
+        timestamp: parseInt(timestampPart) || undefined,
+        userId: userIdPart?.split('.')[0]
+      }
+    }
+    return {}
+  } catch {
+    return {}
+  }
+}
+
+// Export storage constraints
+export const STORAGE_CONSTRAINTS = {
+  ...MEDIA_CONSTRAINTS,
+  AVATAR_MAX_SIZE: 5 * 1024 * 1024, // 5MB for avatars
+  SUPPORTED_BUCKETS: ['media', 'avatars'] as const,
+  MAX_PATH_LENGTH: 255
+}
+
+// Additional legacy functions for backward compatibility
+export const getFileUrl = (bucket: string, path: string) => {
+  // Alias for getPublicUrl
+  return getPublicUrl(bucket, path)
+}
+
+export const getUploadUrl = async (bucket: string, path: string, expiresIn: number = 3600) => {
+  // Alias for createSignedUrl
+  return await createSignedUrl(bucket, path, expiresIn)
 } 

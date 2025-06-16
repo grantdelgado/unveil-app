@@ -127,15 +127,41 @@ export default function CreateEventPage() {
     setFormMessage('')
 
     try {
+      // Enhanced session validation
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      if (sessionError || !session?.user) {
-        setFormMessage('You must be logged in to create an event.')
+      if (sessionError) {
+        console.error('Session error:', sessionError)
+        setFormMessage('Authentication error. Please try logging in again.')
+        setIsLoading(false)
+        return
+      }
+
+      if (!session?.user?.id) {
+        console.error('No valid session or user ID found')
+        setFormMessage('You must be logged in to create an event. Please log in and try again.')
         setIsLoading(false)
         return
       }
 
       const userId = session.user.id
+      console.log('Creating event for user:', userId)
+
+      // Verify user exists in our users table (additional safety check)
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .eq('id', userId)
+        .single()
+
+      if (userError || !userProfile) {
+        console.error('User profile not found:', userError)
+        setFormMessage('User profile not found. Please complete your profile setup first.')
+        setIsLoading(false)
+        return
+      }
+
+      console.log('Verified user profile:', userProfile.full_name || 'No name set')
       let headerImageUrl: string | null = null
 
       // Upload image if provided
@@ -179,37 +205,88 @@ export default function CreateEventPage() {
         }
       }
 
-      // Combine date and time
-      const eventDateTime = `${formData.event_date}T${formData.event_time}:00`
-
-      // Create the event
+      // Create the event (note: time is currently not stored in database schema)
+      // TODO: Update schema to store TIMESTAMPTZ to include time information
       const eventData: EventInsert = {
         title: formData.title.trim(),
-        event_date: eventDateTime,
+        event_date: formData.event_date,
         location: formData.location.trim() || null,
         description: formData.description.trim() || null,
         header_image_url: headerImageUrl,
-        host_user_id: userId,
+        host_user_id: userId, // Ensures proper user association
         is_public: formData.is_public,
       }
+
+      console.log('Creating event with data:', {
+        title: eventData.title,
+        event_date: eventData.event_date,
+        host_user_id: eventData.host_user_id,
+        has_image: !!eventData.header_image_url
+      })
 
       const { data: newEvent, error: insertError } = await supabase
         .from('events')
         .insert(eventData)
-        .select()
+        .select('id, title, host_user_id, created_at')
         .single()
 
       setImageUploadProgress(100)
 
       if (insertError) {
         console.error('Error creating event:', insertError)
-        setFormMessage('Something went wrong creating your event. Please try again.')
+        
+        // Provide more specific error messages
+        if (insertError.code === '23505') {
+          setFormMessage('An event with this name already exists. Please choose a different name.')
+        } else if (insertError.code === '23503') {
+          setFormMessage('User validation failed. Please log out and log back in.')
+        } else {
+          setFormMessage(`Failed to create event: ${insertError.message || 'Unknown error'}. Please try again.`)
+        }
       } else if (newEvent) {
+        console.log('Event created successfully:', {
+          id: newEvent.id,
+          title: newEvent.title,
+          host_user_id: newEvent.host_user_id,
+          created_at: newEvent.created_at
+        })
+        
+        // Verify the event was created with correct user association
+        if (newEvent.host_user_id !== userId) {
+          console.error('Event created with wrong user ID!', {
+            expected: userId,
+            actual: newEvent.host_user_id
+          })
+          setFormMessage('Event created but user association failed. Please contact support.')
+          return
+        }
+
+        // Create host participant entry to ensure proper access
+        const { error: participantError } = await supabase
+          .from('event_participants')
+          .insert({
+            event_id: newEvent.id,
+            user_id: userId,
+            role: 'host',
+            rsvp_status: 'attending'
+          })
+
+        if (participantError) {
+          console.warn('Failed to create host participant entry:', participantError)
+          // Don't fail the entire process for this, but log it
+        } else {
+          console.log('Host participant entry created successfully')
+        }
+
         setFormMessage('Wedding hub created successfully!')
+        
         // Navigate to the event dashboard
         setTimeout(() => {
           router.push(`/host/events/${newEvent.id}/dashboard`)
         }, 1500)
+      } else {
+        console.error('No event data returned after insert')
+        setFormMessage('Event creation completed but no data returned. Please refresh and check your events.')
       }
     } catch (error) {
       console.error('Unexpected error:', error)
@@ -227,7 +304,7 @@ export default function CreateEventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

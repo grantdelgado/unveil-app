@@ -28,7 +28,7 @@ export function QuickActions({ eventId }: QuickActionsProps) {
 
         // Get recent message count
         const { data: messageData } = await supabase
-          .from('messages_new')
+          .from('messages')
           .select('id')
           .eq('event_id', eventId)
           .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())

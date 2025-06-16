@@ -46,7 +46,7 @@ export const LoadingPage: React.FC<{ message?: string }> = ({
   message = 'Loading...' 
 }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
         <LoadingSpinner size="lg" variant="secondary" className="mb-4" />
         <p className="text-stone-600">{message}</p>

@@ -1,344 +1,303 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
-// import { useRouter } from 'next/navigation' // AuthSessionWatcher handles redirects
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services'
 
-// Simplified development phone patterns
-const DEV_PHONES = {
-  '+15550000001': { name: 'Test Host', avatar: '👑', description: 'Event Host' },
-  '+15550000002': { name: 'Test Guest', avatar: '🎉', description: 'Wedding Guest' },
-  '+15550000003': { name: 'Test Admin', avatar: '⚙️', description: 'System Admin' },
-  // TODO: Replace with your actual phone number temporarily
-  // Example: '+15551234567': { name: 'Your Name', avatar: '🎯', description: 'Your Account' }
-}
-
-const isDevelopment = process.env.NODE_ENV === 'development'
+// Login flow steps
+type LoginStep = 'phone' | 'otp'
 
 export default function LoginPage() {
+  const [step, setStep] = useState<LoginStep>('phone')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
-  const [step, setStep] = useState<'phone' | 'verify' | 'dev-select'>('phone')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  // const router = useRouter() // AuthSessionWatcher handles redirects
+  const [error, setError] = useState('')
+  const [isDev, setIsDev] = useState(false)
+  const router = useRouter()
 
-  // Clean phone number input
-  const cleanPhoneNumber = (input: string): string => {
-    const digits = input.replace(/\D/g, '')
-    if (digits.startsWith('1')) return `+${digits}`
-    return `+1${digits}`
-  }
-
-  // Check if phone is development pattern
-  const isDevPhone = (phoneNumber: string): boolean => {
-    return isDevelopment && Object.keys(DEV_PHONES).includes(phoneNumber)
-  }
-
-  // Handle development phone selection
-  const handleDevPhoneLogin = async (devPhone: string, name: string) => {
-    // Prevent multiple simultaneous calls
-    if (loading) return
-    
-    setLoading(true)
-    setMessage(`Signing in as ${name}...`)
-    
-    try {
-      // Create truly deterministic password (not time-based)
-      const password = `dev-${devPhone.slice(-4)}-unveil-2024`
-      const email = `${devPhone.replace(/\D/g, '')}@dev.unveil.app`
-      
-      console.log('🔐 Dev login attempt:', { email, phone: devPhone, name })
-      
-      // First, try to sign in with existing account
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      })
-      
-      if (signInError) {
-        console.log('👤 SignIn failed, trying to create or handle existing user...', signInError.message)
-        
-        // Try regular signup (will fail if user exists, which is fine)
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email,
-          password: password,
-          options: {
-            data: {
-              phone: devPhone,
-              full_name: name,
-              development_user: true
-            }
-          }
-        })
-        
-        if (signUpError) {
-          if (signUpError.message.includes('already registered') || signUpError.message.includes('already been taken')) {
-            console.log('✅ User already exists - this is expected!')
-            setMessage(`${name} account exists! Check Supabase settings if login fails.`)
-            
-            // User exists but signin failed - likely email confirmation issue
-            console.log('❌ User exists but signin failed. Email confirmation may be required.')
-            console.log('💡 Solution: Go to Supabase Dashboard → Authentication → Providers → Email → Turn OFF "Confirm email"')
-            
-            setMessage(`${name} account exists but signin failed. Please disable email confirmation in Supabase Dashboard (Auth → Providers → Email → Turn OFF "Confirm email"), then try again.`)
-            setLoading(false)
-            return
-          } else {
-            console.error('❌ SignUp Error:', signUpError)
-            throw new Error(`Account creation failed: ${signUpError.message}`)
-          }
-        } else {
-          console.log('✅ New account created and signed in:', signUpData.user?.id)
-          setMessage(`Welcome ${name}! 🎉`)
-        }
-      } else {
-        console.log('✅ Signed in successfully:', signInData.user?.id)
-        setMessage(`Welcome back ${name}! 🎉`)
-      }
-      
-      // Give user feedback before redirect
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // AuthSessionWatcher will handle redirect to /select-event
-      
-    } catch (error) {
-      console.error('❌ Dev login error:', error)
-      setMessage(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      setLoading(false) // Reset loading on error
-    }
-    
-    // Don't reset loading here - let the redirect happen or error handle it
-  }
-
-  // Handle SMS OTP flow  
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setMessage('')
     
-    const formattedPhone = cleanPhoneNumber(phone)
+    // Clear previous errors
+    setError('')
     
-    if (formattedPhone.length < 10) {
-      setMessage('Please enter a valid phone number')
-      setLoading(false)
+    // Validate phone number
+    const validation = validatePhoneNumber(phone)
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid phone number')
       return
     }
-    
-    try {
-      // Check if development phone OR development mode (bypass SMS for any phone in dev)
-      if (isDevPhone(formattedPhone) || isDevelopment) {
-        setMessage('Development mode - SMS verification bypassed')
-        setStep('verify')
-        setOtp('123456') // Auto-fill for dev
-        setLoading(false)
-        return
-      }
-      
-      // Production SMS flow
-      const { error } = await supabase.auth.signInWithOtp({ 
-        phone: formattedPhone,
-        options: {
-          data: { phone: formattedPhone }
-        }
-      })
-      
-      if (error) {
-        setMessage(`Failed to send verification code: ${error.message}`)
-      } else {
-        setMessage('Verification code sent!')
-        setStep('verify')
-      }
-    } catch (error) {
-      console.error('SMS error:', error)
-      setMessage('Network error. Please try again.')
-    }
-    
-    setLoading(false)
-  }
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
     setLoading(true)
-    setMessage('')
-    
-    const formattedPhone = cleanPhoneNumber(phone)
-    
+
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: formattedPhone,
-        token: otp,
-        type: 'sms'
-      })
+      console.log('📱 Sending OTP to:', phone)
       
-      if (error) {
-        setMessage('Invalid verification code. Please try again.')
+      const result = await sendOTP(phone)
+      
+      if (result.success) {
+        console.log('✅ OTP sent successfully:', {
+          isDev: result.isDev
+        })
+        
+        if (result.isDev) {
+          // Dev phone authenticated directly
+          console.log('🛠️ Development mode: Direct authentication successful', {
+            isNewUser: result.isNewUser
+          })
+          setError('') // Clear any previous errors
+          
+          // For dev authentication, show a success message and let AuthSessionWatcher handle routing
+          // Don't immediately clear loading state as we want to show "Authenticating..." until redirect
+          console.log('⏳ Waiting for AuthSessionWatcher to handle routing...')
+          
+          // Clear loading after a short delay if redirect doesn't happen
+          setTimeout(() => {
+            setLoading(false)
+          }, 3000) // 3 second timeout
+          
+          return
+        }
+        
+        // Regular flow - show OTP input
+        setIsDev(result.isDev)
+        setStep('otp')
+        setLoading(false) // Only clear loading for regular OTP flow
       } else {
-        setMessage('Phone verified successfully!')
-        // AuthSessionWatcher handles redirect
+        console.error('❌ Failed to send OTP:', result.error)
+        
+        // Better error messages for development mode
+        let errorMessage = result.error || 'Failed to send verification code. Please try again.'
+        
+        if (result.isDev && result.error?.includes('Database error')) {
+          errorMessage = 'Development authentication failed. Please check your Supabase configuration.'
+        } else if (result.isDev) {
+          errorMessage = `Development authentication error: ${result.error}`
+        }
+        
+        setError(errorMessage)
+        setLoading(false)
       }
-    } catch (error) {
-      console.error('OTP verification error:', error)
-      setMessage('Verification failed. Please try again.')
+    } catch (err) {
+      console.error('❌ Unexpected OTP send error:', err)
+      setError('An unexpected error occurred. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Clear previous errors
+    setError('')
+    
+    // Validate OTP format
+    if (!/^\d{6}$/.test(otp)) {
+      setError('Please enter a 6-digit verification code')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      console.log('🔐 Verifying OTP for:', phone)
+      
+      const result = await verifyOTP(phone, otp)
+      
+      if (result.success) {
+        console.log('✅ Authentication successful:', {
+          userId: result.userId,
+          isNewUser: result.isNewUser
+        })
+        
+        // Success - route based on user status
+        if (result.isNewUser) {
+          router.push('/setup')
+        } else {
+          router.push('/select-event')
+        }
+      } else {
+        console.error('❌ OTP verification failed:', result.error)
+        setError(result.error || 'Invalid verification code. Please try again.')
+      }
+    } catch (err) {
+      console.error('❌ Unexpected OTP verification error:', err)
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBackToPhone = () => {
+    setStep('phone')
+    setOtp('')
+    setError('')
+    setIsDev(false)
+  }
+
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const cleaned = value.replace(/\D/g, '')
+    
+    // Format as (XXX) XXX-XXXX for US numbers
+    if (cleaned.length >= 10) {
+      const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})/)
+      if (match) {
+        return `(${match[1]}) ${match[2]}-${match[3]}`
+      }
     }
     
-    setLoading(false)
-  }
-
-  const formatPhoneDisplay = (value: string): string => {
-    const digits = value.replace(/\D/g, '')
-    if (digits.length >= 10) {
-      return `(${digits.slice(-10, -7)}) ${digits.slice(-7, -4)}-${digits.slice(-4)}`
+    // For shorter numbers, just return the digits
+    if (cleaned.length >= 6) {
+      const match = cleaned.match(/^(\d{3})(\d{0,3})(\d{0,4})/)
+      if (match) {
+        let formatted = `(${match[1]})`
+        if (match[2]) formatted += ` ${match[2]}`
+        if (match[3]) formatted += `-${match[3]}`
+        return formatted
+      }
     }
-    return value
+    
+    return cleaned
   }
 
-  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneDisplay(e.target.value)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value)
     setPhone(formatted)
+    
+    // Clear error when user starts typing
+    if (error) setError('')
+  }
+
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6) // Only digits, max 6
+    setOtp(value)
+    
+    // Clear error when user starts typing
+    if (error) setError('')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        {/* Header */}
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-stone-200 p-8">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">💍</div>
-          <h1 className="text-2xl font-semibold text-stone-800 mb-2">Welcome to Unveil</h1>
-          <p className="text-stone-600">Sign in with your phone number</p>
-        </div>
-
-        {/* Development Mode Toggle */}
-        {isDevelopment && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-amber-800">Development Mode</span>
-              <button
-                onClick={() => setStep(step === 'dev-select' ? 'phone' : 'dev-select')}
-                className="text-xs text-amber-700 hover:text-amber-900"
-              >
-                {step === 'dev-select' ? 'Use Real Phone' : 'Use Test Account'}
-              </button>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Unveil</h1>
+          {step === 'phone' ? (
+            <p className="text-gray-600">
+              Enter your phone number to continue
+            </p>
+          ) : (
+            <div>
+              <p className="text-gray-600 mb-2">
+                Enter the verification code sent to
+              </p>
+              <p className="text-gray-900 font-medium">{phone}</p>
             </div>
-            
-            {step === 'dev-select' && (
-              <div className="space-y-2">
-                {Object.entries(DEV_PHONES).map(([devPhone, user]) => (
-                  <button
-                    key={devPhone}
-                    onClick={() => handleDevPhoneLogin(devPhone, user.name)}
-                    disabled={loading}
-                    className="w-full p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="text-lg">{user.avatar}</div>
-                      <div className="flex-1 text-left">
-                        <div className="font-medium text-stone-800">{user.name}</div>
-                        <div className="text-sm text-stone-600">{user.description}</div>
-                        <div className="text-xs text-stone-500">{devPhone}</div>
-                      </div>
-                      {loading ? (
-                        <div className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin"></div>
-                      ) : (
-                        <span className="text-amber-600">→</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Main Login Form */}
-        {step !== 'dev-select' && (
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-            {step === 'phone' && (
-              <form onSubmit={handleSendOTP} className="space-y-4">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-stone-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={handlePhoneInput}
-                    placeholder="(555) 123-4567"
-                    className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                    required
-                  />
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading || !phone}
-                  className="w-full py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? 'Sending...' : 'Send Verification Code'}
-                </button>
-              </form>
-            )}
-
-            {step === 'verify' && (
-              <form onSubmit={handleVerifyOTP} className="space-y-4">
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-stone-700 mb-2">
-                    Verification Code
-                  </label>
-                  <input
-                    id="otp"
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="123456"
-                    className="w-full p-3 text-center text-lg font-mono border border-stone-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                    maxLength={6}
-                    required
-                  />
-                  <p className="text-sm text-stone-600 mt-1">
-                    Code sent to {formatPhoneDisplay(phone)}
-                  </p>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading || otp.length !== 6}
-                  className="w-full py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? 'Verifying...' : 'Verify Code'}
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setStep('phone')}
-                  className="w-full py-2 text-stone-600 hover:text-stone-800 text-sm"
-                >
-                  ← Back to phone number
-                </button>
-              </form>
-            )}
-
-            {/* Status Messages */}
-            {message && (
-              <div className={`mt-4 p-3 rounded-lg text-sm text-center ${
-                message.includes('Failed') || message.includes('Invalid') 
-                  ? 'bg-red-50 text-red-700 border border-red-200'
-                  : 'bg-green-50 text-green-700 border border-green-200'
-              }`}>
-                {message}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="text-center mt-6 text-xs text-stone-500">
-          <p>By signing in, you agree to our Terms of Service</p>
-          {isDevelopment && (
-            <p className="mt-2 text-amber-600">Development Mode Active</p>
           )}
         </div>
+
+        {step === 'phone' ? (
+          <form onSubmit={handlePhoneSubmit} className="space-y-6">
+            <Input
+              id="phone"
+              label="Phone Number"
+              type="tel"
+              value={phone}
+              onChange={handlePhoneChange}
+              placeholder="(555) 123-4567"
+              disabled={loading}
+              error={error}
+              isRequired
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={loading || !phone.trim()}
+              isLoading={loading}
+            >
+              {loading ? 'Authenticating...' : 'Continue'}
+            </Button>
+
+            {process.env.NODE_ENV !== 'production' && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                <div className="font-semibold mb-1">🚀 Development Mode</div>
+                <div>Use test numbers for instant authentication:</div>
+                <div className="mt-1 font-mono text-blue-900">
+                  (555) 000-0001 • (555) 000-0002 • (555) 000-0003
+                </div>
+              </div>
+            )}
+          </form>
+        ) : (
+          <form onSubmit={handleOtpSubmit} className="space-y-6">
+            <Input
+              id="otp"
+              label="Verification Code"
+              type="text"
+              value={otp}
+              onChange={handleOtpChange}
+              placeholder="123456"
+              disabled={loading}
+              error={error}
+              isRequired
+              maxLength={6}
+              className="text-center text-lg font-mono tracking-widest"
+            />
+
+            {isDev && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                <strong>Development Mode:</strong> Enter any 6-digit code to continue
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={loading || otp.length !== 6}
+                isLoading={loading}
+              >
+                {loading ? 'Verifying...' : 'Verify Code'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="lg"
+                className="w-full"
+                onClick={handleBackToPhone}
+                disabled={loading}
+              >
+                Change Phone Number
+              </Button>
+            </div>
+          </form>
+        )}
+
+        <div className="mt-6 text-center text-sm text-gray-500">
+          {step === 'phone' ? (
+            <p>New to Unveil? Don&apos;t worry - we&apos;ll create your account automatically.</p>
+          ) : (
+            <p>Didn&apos;t receive a code? Wait 60 seconds and try again.</p>
+          )}
+        </div>
+        
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+            <strong>Development Mode:</strong> Using phone-based OTP authentication
+            <br />
+            <strong>Test phones:</strong> +15550000001, +15550000002, +15550000003
+          </div>
+        )}
       </div>
     </div>
   )

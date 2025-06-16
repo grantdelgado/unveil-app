@@ -62,7 +62,7 @@ export default function HostDashboardPage() { // Renamed component for clarity
   const validHostedEvents = hostedEvents || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="flex justify-between items-center mb-8">
           <div>

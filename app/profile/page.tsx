@@ -31,7 +31,7 @@ export default function ProfilePage() {
       
       // Check if user has hosted events
       const { data: hostedEvents } = await supabase
-        .from('events_new')
+        .from('events')
         .select('id')
         .eq('host_user_id', user.id)
       
@@ -56,7 +56,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -125,22 +125,39 @@ export default function ProfilePage() {
           </form>
         </div>
 
-        {/* Wedding Hub Actions */}
-        {hasHostedEvents && (
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-stone-800 mb-2">Wedding Management</h2>
-              <p className="text-stone-600 mb-6">Create additional wedding hubs or manage existing ones</p>
-              
-              <Link
-                href="/host/events/create"
-                className="inline-flex items-center justify-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200"
-              >
-                Create Another Wedding Hub
-              </Link>
-            </div>
+        {/* Event Management Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-semibold text-stone-800 mb-2">Event Management</h2>
+            <p className="text-stone-600">Create and manage your wedding events</p>
           </div>
-        )}
+          
+          <div className="space-y-4">
+            {/* Create New Event Button */}
+            <Link
+              href="/host/events/create"
+              className="w-full inline-flex items-center justify-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200"
+            >
+              <span className="mr-2">+</span>
+              Create New Event
+            </Link>
+
+            {/* Show additional management options if user has hosted events */}
+            {hasHostedEvents && (
+              <div className="pt-4 border-t border-stone-200">
+                <p className="text-sm text-stone-600 mb-4">
+                  You have hosted events. You can create additional events or manage existing ones.
+                </p>
+                <Link
+                  href="/host/events/create"
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-stone-50 text-stone-700 font-medium rounded-lg hover:bg-stone-100 border border-stone-200 transition-colors"
+                >
+                  Create Another Event
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Account Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
@@ -172,7 +189,7 @@ function LogoutButtonStyled({ router }: { router: ReturnType<typeof useRouter> }
       onClick={handleLogout}
       className="w-full py-3 px-4 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
     >
-      Log Out
+      Sign Out
     </button>
   );
 }

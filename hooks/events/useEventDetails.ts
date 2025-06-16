@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { type EventWithHost, type EventParticipantWithUser } from '@/lib/supabase/types'
-import { getEventById, getEventParticipants } from '@/services/events'
+// import { getEventParticipants } from '@/services/events'
 import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
 
@@ -53,7 +53,7 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
         if (!hostError) {
           hostData = hostInfo
         }
-      } catch (hostFetchError) {
+      } catch {
         // Silently handle host fetch failures
       }
 
@@ -88,7 +88,7 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
         if (!userProfileError) {
           participantUserProfile = userProfile
         }
-      } catch (profileFetchError) {
+      } catch {
         // Silently handle profile fetch failures
       }
 

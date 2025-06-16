@@ -6,8 +6,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Database } from '@/app/reference/supabase.types'
 
 type Participant = Database['public']['Tables']['event_participants']['Row']
-type Message = Database['public']['Tables']['messages_new']['Row']
-type Media = Database['public']['Tables']['media_new']['Row']
+type Message = Database['public']['Tables']['messages']['Row']
+type Media = Database['public']['Tables']['media']['Row']
 
 interface EventAnalyticsProps {
   eventId: string
@@ -42,13 +42,13 @@ export function EventAnalytics({ eventId }: EventAnalyticsProps) {
             .eq('event_id', eventId),
           
           supabase
-            .from('messages_new')
+            .from('messages')
             .select('*')
             .eq('event_id', eventId)
             .order('created_at', { ascending: false }),
             
           supabase
-            .from('media_new')
+            .from('media')
             .select('*')
             .eq('event_id', eventId)
             .order('created_at', { ascending: false })
