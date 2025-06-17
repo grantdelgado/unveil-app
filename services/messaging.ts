@@ -39,7 +39,28 @@ const handleDatabaseError = (error: unknown, context: string) => {
   throw new Error(dbError.message || 'Database operation failed');
 };
 
-// Message validation
+/**
+ * Validates message content for length and format requirements
+ * 
+ * Ensures message content meets application constraints:
+ * - Must not be empty or only whitespace
+ * - Must be at least 1 character long
+ * - Must not exceed 2000 characters
+ * 
+ * @param content - The message content to validate
+ * @returns Object with validation result and error message if invalid
+ * 
+ * @example
+ * ```typescript
+ * const validation = validateMessage(userInput)
+ * if (!validation.isValid) {
+ *   console.error('Invalid message:', validation.error)
+ * }
+ * ```
+ * 
+ * @see {@link sendMessage} for message creation
+ * @see {@link updateMessage} for message editing
+ */
 export const validateMessage = (
   content: string,
 ): { isValid: boolean; error?: string } => {
@@ -64,7 +85,32 @@ export const validateMessage = (
   return { isValid: true };
 };
 
-// Messaging service functions
+/**
+ * Messaging service functions for event communication
+ */
+
+/**
+ * Retrieves all messages for a specific event
+ * 
+ * Fetches messages with sender information, ordered chronologically.
+ * Access is controlled by RLS policies - only event participants can view messages.
+ * 
+ * @param eventId - The event ID to get messages for
+ * @returns Promise resolving to Supabase response with messages and sender data
+ * 
+ * @throws {Error} If event not found or access denied
+ * 
+ * @example
+ * ```typescript
+ * const { data: messages, error } = await getEventMessages('event-123')
+ * messages?.forEach(msg => {
+ *   console.log(`${msg.sender.display_name}: ${msg.content}`)
+ * })
+ * ```
+ * 
+ * @see {@link sendMessage} for creating messages
+ * @see {@link getMessagesByType} for filtered messages
+ */
 export const getEventMessages = async (eventId: string) => {
   try {
     return await supabase
@@ -82,6 +128,31 @@ export const getEventMessages = async (eventId: string) => {
   }
 };
 
+/**
+ * Sends a new message to an event
+ * 
+ * Creates a message in the event's message thread. Automatically validates
+ * message content and triggers real-time notifications to other participants.
+ * 
+ * @param messageData - Message data including content, event_id, sender_user_id, and type
+ * @returns Promise resolving to Supabase response with created message and sender info
+ * 
+ * @throws {Error} If validation fails, access denied, or database error
+ * 
+ * @example
+ * ```typescript
+ * const messageData = {
+ *   content: 'Looking forward to the event!',
+ *   event_id: 'event-123',
+ *   sender_user_id: 'user-456',
+ *   message_type: 'direct'
+ * }
+ * const { data: message, error } = await sendMessage(messageData)
+ * ```
+ * 
+ * @see {@link validateMessage} for content validation rules
+ * @see {@link sendBulkMessage} for announcements to all participants
+ */
 export const sendMessage = async (messageData: MessageInsert) => {
   try {
     // Validate message content

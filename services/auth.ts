@@ -21,7 +21,22 @@ interface OTPRateLimit {
 // In-memory rate limiting store (in production, use Redis or database)
 const otpRateLimits = new Map<string, OTPRateLimit>();
 
-// Rate limiting constants
+/**
+ * Rate limiting configuration constants
+ * 
+ * These constants define the OTP rate limiting behavior:
+ * - MAX_OTP_ATTEMPTS: Maximum OTP requests allowed per time window (3 per hour)
+ * - OTP_RATE_LIMIT_WINDOW: Time window for rate limiting (1 hour)
+ * - OTP_BLOCK_DURATION: How long to block after max attempts (15 minutes)
+ * - MIN_RETRY_INTERVAL: Minimum time between OTP requests (1 minute)
+ */
+/**
+ * Rate limiting configuration constants
+ * @constant {number} MAX_OTP_ATTEMPTS - Maximum OTP attempts allowed per time window (3)
+ * @constant {number} OTP_RATE_LIMIT_WINDOW - Time window for rate limiting in ms (1 hour)
+ * @constant {number} OTP_BLOCK_DURATION - Block duration after max attempts in ms (15 minutes)
+ * @constant {number} MIN_RETRY_INTERVAL - Minimum time between attempts in ms (1 minute)
+ */
 const MAX_OTP_ATTEMPTS = 3; // Max attempts per hour
 const OTP_RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
 const OTP_BLOCK_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -70,7 +85,28 @@ const isDevPhone = (phone: string): boolean => {
   return isDevMode() && DEV_PHONE_WHITELIST.includes(phone);
 };
 
-// Rate limiting functions
+/**
+ * Checks if a phone number is within OTP rate limits
+ * 
+ * Enforces rate limiting to prevent abuse:
+ * - Maximum 3 attempts per hour
+ * - 1-minute minimum interval between attempts  
+ * - 15-minute block period after max attempts exceeded
+ * 
+ * @param phone - The phone number to check (any format, will be normalized)
+ * @returns Object containing:
+ *   - allowed: Whether OTP request is allowed
+ *   - error: Human-readable error message if blocked
+ *   - retryAfter: Seconds until next attempt allowed
+ * 
+ * @example
+ * ```typescript
+ * const check = checkOTPRateLimit('+15551234567')
+ * if (!check.allowed) {
+ *   console.log(check.error) // "Please wait 45 seconds before requesting another code."
+ * }
+ * ```
+ */
 export const checkOTPRateLimit = (
   phone: string,
 ): { allowed: boolean; error?: string; retryAfter?: number } => {
@@ -125,6 +161,20 @@ export const checkOTPRateLimit = (
   return { allowed: true };
 };
 
+/**
+ * Records an OTP attempt for rate limiting tracking
+ * 
+ * Updates the in-memory rate limiting store with attempt count and timestamp.
+ * Creates new entry if none exists or resets counter if outside time window.
+ * 
+ * @param phone - The phone number to record attempt for
+ * 
+ * @example
+ * ```typescript
+ * recordOTPAttempt('+15551234567')
+ * // Subsequent checkOTPRateLimit() calls will reflect this attempt
+ * ```
+ */
 export const recordOTPAttempt = (phone: string) => {
   const now = Date.now();
   const existing = otpRateLimits.get(phone);
@@ -142,11 +192,42 @@ export const recordOTPAttempt = (phone: string) => {
   }
 };
 
+/**
+ * Clears rate limiting data for a phone number
+ * 
+ * Removes all rate limiting restrictions for the specified phone number.
+ * Typically called after successful OTP verification.
+ * 
+ * @param phone - The phone number to clear restrictions for
+ * 
+ * @example
+ * ```typescript
+ * // After successful verification
+ * clearOTPRateLimit('+15551234567')
+ * ```
+ */
 export const clearOTPRateLimit = (phone: string) => {
   otpRateLimits.delete(phone);
 };
 
-// Core auth service functions
+/**
+ * Gets the currently authenticated user from Supabase
+ * 
+ * Retrieves the current user session data from Supabase Auth.
+ * Returns null if no user is authenticated.
+ * 
+ * @returns Promise resolving to object with:
+ *   - user: Supabase User object or null
+ *   - error: Error object if operation failed
+ * 
+ * @example
+ * ```typescript
+ * const { user, error } = await getCurrentUser()
+ * if (user) {
+ *   console.log('User ID:', user.id)
+ * }
+ * ```
+ */
 export const getCurrentUser = async () => {
   try {
     const {
@@ -160,6 +241,24 @@ export const getCurrentUser = async () => {
   }
 };
 
+/**
+ * Gets the current authentication session from Supabase
+ * 
+ * Retrieves the active session including access token and refresh token.
+ * Used for checking authentication status and token validity.
+ * 
+ * @returns Promise resolving to object with:
+ *   - session: Supabase Session object or null
+ *   - error: Error object if operation failed
+ * 
+ * @example
+ * ```typescript
+ * const { session, error } = await getCurrentSession()
+ * if (session) {
+ *   console.log('Session expires:', session.expires_at)
+ * }
+ * ```
+ */
 export const getCurrentSession = async () => {
   try {
     const {
@@ -173,6 +272,24 @@ export const getCurrentSession = async () => {
   }
 };
 
+/**
+ * Signs out the current user from Supabase Auth
+ * 
+ * Terminates the current session and clears all authentication tokens.
+ * User will need to re-authenticate to access protected resources.
+ * 
+ * @returns Promise resolving to object with:
+ *   - error: Error object if sign out failed, null on success
+ * 
+ * @example
+ * ```typescript
+ * const { error } = await signOut()
+ * if (!error) {
+ *   // Redirect to login page
+ *   router.push('/login')
+ * }
+ * ```
+ */
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
@@ -183,7 +300,38 @@ export const signOut = async () => {
   }
 };
 
-// Send OTP to phone number
+/**
+ * Sends an OTP (One-Time Password) to a phone number
+ * 
+ * Handles both development and production OTP flows:
+ * - Development: Whitelisted phones (+15550000001-003) use pre-existing credentials
+ * - Production: Sends actual SMS OTP via Supabase Auth
+ * 
+ * Enforces rate limiting and validates phone number format.
+ * Creates user profile in database if it doesn't exist.
+ * 
+ * @param phone - Phone number in any format (will be normalized to E.164)
+ * @returns Promise resolving to object with:
+ *   - success: Whether OTP was sent successfully
+ *   - isDev: Whether this was a development bypass
+ *   - isNewUser: Whether a new user account was created
+ *   - error: Error message if operation failed
+ * 
+ * @throws {Error} Rate limit exceeded, validation failed, or database error
+ * 
+ * @example
+ * ```typescript
+ * const result = await sendOTP('+1-555-123-4567')
+ * if (result.success) {
+ *   console.log('OTP sent!', result.isDev ? '(dev mode)' : '(production)')
+ * } else {
+ *   console.error(result.error)
+ * }
+ * ```
+ * 
+ * @see {@link verifyOTP} for verifying the sent OTP
+ * @see {@link checkOTPRateLimit} for rate limiting details
+ */
 export const sendOTP = async (
   phone: string,
 ): Promise<{
@@ -327,6 +475,41 @@ export const sendOTP = async (
 };
 
 // Verify OTP and complete authentication
+/**
+ * Verifies an OTP (One-Time Password) for phone authentication
+ * 
+ * Validates the OTP token against the phone number and authenticates the user:
+ * - Development: Uses password authentication for whitelisted phones
+ * - Production: Verifies OTP token via Supabase Auth
+ * 
+ * Clears rate limiting on successful verification and ensures user profile exists.
+ * 
+ * @param phone - Phone number in any format (will be normalized to E.164)
+ * @param token - The OTP token to verify (6 digits for production, ignored for dev)
+ * @returns Promise resolving to object with:
+ *   - success: Whether OTP verification succeeded
+ *   - isNewUser: Whether this is a newly created user
+ *   - userId: The authenticated user's ID
+ *   - error: Error message if verification failed
+ * 
+ * @throws {Error} Verification failed, expired token, or database error
+ * 
+ * @example
+ * ```typescript
+ * const result = await verifyOTP('+15551234567', '123456')
+ * if (result.success) {
+ *   console.log('User authenticated:', result.userId)
+ *   if (result.isNewUser) {
+ *     // Show onboarding flow
+ *   }
+ * } else {
+ *   console.error('Verification failed:', result.error)
+ * }
+ * ```
+ * 
+ * @see {@link sendOTP} for sending the OTP first
+ * @see {@link clearOTPRateLimit} for rate limit clearing behavior
+ */
 export const verifyOTP = async (
   phone: string,
   token: string,
@@ -401,7 +584,21 @@ export const verifyOTP = async (
   }
 };
 
-// Helper function to handle user creation/lookup logic
+/**
+ * Internal helper function for user creation and lookup logic
+ * 
+ * Handles the database operations for user authentication:
+ * - Checks if user with phone number already exists
+ * - Creates new user profile if needed
+ * - Ensures auth.uid() matches user record
+ * 
+ * @private
+ * @param normalizedPhone - Phone number in E.164 format
+ * @param userId - The authenticated user ID from Supabase Auth
+ * @returns Promise resolving to authentication result
+ * 
+ * @internal This function is not exported and is used internally by verifyOTP
+ */
 const handleUserCreation = async (
   normalizedPhone: string,
   userId: string,
@@ -502,6 +699,27 @@ const handleUserCreation = async (
 };
 
 // Get current authenticated user profile from users table
+/**
+ * Gets the current user's profile from the users table
+ * 
+ * Retrieves the user profile data from the public_user_profiles view,
+ * which includes safe public information about the authenticated user.
+ * 
+ * @returns Promise resolving to object with:
+ *   - data: User profile data or null if not found
+ *   - error: Error object if operation failed
+ * 
+ * @example
+ * ```typescript
+ * const { data: profile, error } = await getCurrentUserProfile()
+ * if (profile) {
+ *   console.log('User name:', profile.display_name)
+ *   console.log('Phone:', profile.phone)
+ * }
+ * ```
+ * 
+ * @see {@link getCurrentUser} for Supabase Auth user data
+ */
 export const getCurrentUserProfile = async () => {
   try {
     const {
@@ -530,7 +748,29 @@ export const getCurrentUserProfile = async () => {
   }
 };
 
-// Validate phone number format
+/**
+ * Validates phone number format for authentication
+ * 
+ * Checks if the provided phone number meets minimum requirements:
+ * - Must not be empty or null
+ * - Must contain 10-11 digits (US format)
+ * - Handles various input formats (with/without country code, formatting)
+ * 
+ * @param phone - Phone number to validate (any format)
+ * @returns Object with:
+ *   - isValid: Whether the phone number is valid
+ *   - error: Descriptive error message if invalid
+ * 
+ * @example
+ * ```typescript
+ * const validation = validatePhoneNumber('(555) 123-4567')
+ * if (!validation.isValid) {
+ *   console.error(validation.error) // User-friendly error message
+ * }
+ * ```
+ * 
+ * @see {@link normalizePhoneNumber} for format normalization
+ */
 export const validatePhoneNumber = (
   phone: string,
 ): { isValid: boolean; error?: string } => {
@@ -552,6 +792,28 @@ export const validatePhoneNumber = (
 };
 
 // Helper function to get user by phone
+/**
+ * Retrieves a user by their phone number
+ * 
+ * Searches for a user in the database using their normalized phone number.
+ * Used to check if a user exists before authentication flows.
+ * 
+ * @param phone - Phone number to search for (will be normalized)
+ * @returns Promise resolving to Supabase query response with user data
+ * 
+ * @example
+ * ```typescript
+ * const { data: user, error } = await getUserByPhone('+15551234567')
+ * if (user) {
+ *   console.log('Existing user:', user.display_name)
+ * } else if (!error) {
+ *   console.log('New user - account will be created')
+ * }
+ * ```
+ * 
+ * @see {@link normalizePhoneNumber} for phone number formatting
+ * @see {@link validatePhoneNumber} for input validation
+ */
 export const getUserByPhone = async (phone: string) => {
   try {
     return await supabase.from('users').select('*').eq('phone', phone).single();

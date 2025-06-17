@@ -36,7 +36,31 @@ const handleDatabaseError = (error: unknown, context: string) => {
   throw new Error(dbError.message || 'Database operation failed');
 };
 
-// Event service functions
+/**
+ * Creates a new event in the database
+ * 
+ * Creates an event record and automatically makes the caller the host.
+ * Requires valid host_user_id that matches an authenticated user.
+ * 
+ * @param eventData - Event data to insert (title, date, location, etc.)
+ * @returns Promise resolving to Supabase response with created event and host info
+ * 
+ * @throws {Error} If validation fails or database constraints are violated
+ * 
+ * @example
+ * ```typescript
+ * const eventData = {
+ *   title: 'Wedding Reception',
+ *   event_date: '2024-06-15T18:00:00Z',
+ *   location: 'Grand Ballroom',
+ *   host_user_id: 'user-123'
+ * }
+ * const { data: event, error } = await createEvent(eventData)
+ * ```
+ * 
+ * @see {@link updateEvent} for modifying existing events
+ * @see {@link deleteEvent} for removing events
+ */
 export const createEvent = async (eventData: EventInsert) => {
   try {
     return await supabase
@@ -54,6 +78,30 @@ export const createEvent = async (eventData: EventInsert) => {
   }
 };
 
+/**
+ * Updates an existing event
+ * 
+ * Modifies event details like title, date, location, or description.
+ * Only the event host can update event details (enforced by RLS).
+ * 
+ * @param id - The event ID to update
+ * @param updates - Partial event data with fields to update
+ * @returns Promise resolving to Supabase response with updated event
+ * 
+ * @throws {Error} If event not found, access denied, or validation fails
+ * 
+ * @example
+ * ```typescript
+ * const updates = { 
+ *   title: 'Updated Wedding Reception',
+ *   location: 'New Venue Address'
+ * }
+ * const { data: event, error } = await updateEvent('event-123', updates)
+ * ```
+ * 
+ * @see {@link createEvent} for creating new events
+ * @see {@link getEventById} for retrieving event details
+ */
 export const updateEvent = async (id: string, updates: EventUpdate) => {
   try {
     return await supabase
@@ -72,6 +120,33 @@ export const updateEvent = async (id: string, updates: EventUpdate) => {
   }
 };
 
+/**
+ * Deletes an event and all associated data
+ * 
+ * Permanently removes the event and cascades to delete:
+ * - Event participants
+ * - Media uploads
+ * - Messages
+ * - Other related data
+ * 
+ * Only the event host can delete events (enforced by RLS).
+ * 
+ * @param id - The event ID to delete
+ * @returns Promise resolving to Supabase delete response
+ * 
+ * @throws {Error} If event not found or access denied
+ * 
+ * @example
+ * ```typescript
+ * const { error } = await deleteEvent('event-123')
+ * if (!error) {
+ *   console.log('Event deleted successfully')
+ * }
+ * ```
+ * 
+ * @warning This operation is irreversible and deletes all event data
+ * @see {@link updateEvent} for non-destructive changes
+ */
 export const deleteEvent = async (id: string) => {
   try {
     return await supabase.from('events').delete().eq('id', id);
@@ -80,6 +155,29 @@ export const deleteEvent = async (id: string) => {
   }
 };
 
+/**
+ * Retrieves a single event by ID with host information
+ * 
+ * Fetches complete event details including host profile data.
+ * Access is controlled by RLS policies based on user's relationship to the event.
+ * 
+ * @param id - The event ID to retrieve
+ * @returns Promise resolving to Supabase response with event and host data
+ * 
+ * @throws {Error} If event not found or access denied
+ * 
+ * @example
+ * ```typescript
+ * const { data: event, error } = await getEventById('event-123')
+ * if (event) {
+ *   console.log('Event:', event.title)
+ *   console.log('Host:', event.host.display_name)
+ * }
+ * ```
+ * 
+ * @see {@link getHostEvents} for host's events
+ * @see {@link getParticipantEvents} for participant's events
+ */
 export const getEventById = async (id: string) => {
   try {
     return await supabase

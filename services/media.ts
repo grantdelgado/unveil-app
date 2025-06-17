@@ -109,12 +109,60 @@ const handleDatabaseError = (error: unknown, context: string) => {
   throw new Error(dbError.message || 'Database operation failed');
 };
 
-// File validation functions
+/**
+ * File validation functions for media uploads
+ */
+
+/**
+ * Validates file size against maximum limits
+ * 
+ * Checks if file size is within the allowed limit (50MB max).
+ * Used as a quick validation before more intensive checks.
+ * 
+ * @param file - File object to validate
+ * @returns Whether file size is valid
+ * 
+ * @example
+ * ```typescript
+ * const isValidSize = validateFileSize(selectedFile)
+ * if (!isValidSize) {
+ *   console.error('File too large (max 50MB)')
+ * }
+ * ```
+ * 
+ * @see {@link validateFileType} for comprehensive file validation
+ */
 export const validateFileSize = (file: File): boolean => {
   return file.size <= MAX_FILE_SIZE;
 };
 
-// Enhanced file validation with security checks
+/**
+ * Comprehensive file validation with security checks
+ * 
+ * Performs multi-layer validation including:
+ * - File size limits (25MB images, 50MB videos)
+ * - MIME type verification against allowed types
+ * - File extension validation
+ * - Magic number/file signature validation
+ * - Security checks for dangerous file types
+ * - File name sanitization
+ * 
+ * @param file - File object to validate
+ * @returns Promise resolving to validation result with media type and error details
+ * 
+ * @example
+ * ```typescript
+ * const validation = await validateFileType(selectedFile)
+ * if (!validation.isValid) {
+ *   console.error('Invalid file:', validation.error)
+ * } else {
+ *   console.log('Valid', validation.mediaType, 'file')
+ * }
+ * ```
+ * 
+ * @see {@link validateMediaFile} for simple validation wrapper
+ * @see {@link uploadMedia} for uploading validated files
+ */
 export const validateFileType = async (
   file: File,
 ): Promise<{
