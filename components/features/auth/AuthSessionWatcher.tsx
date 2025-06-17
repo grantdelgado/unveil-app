@@ -52,10 +52,10 @@ export function AuthSessionWatcher({ children }: AuthSessionWatcherProps) {
           setLoading(false);
           setInitialized(true);
 
-          // If on login page and authenticated, redirect to select-event immediately
-          if (pathname === '/login') {
+          // If on login page or root page and authenticated, redirect to select-event immediately
+          if (pathname === '/login' || pathname === '/') {
             logAuth(
-              'Authenticated user on login page, redirecting to select-event',
+              'Authenticated user on login/root page, redirecting to select-event',
             );
             // Use replace instead of push to prevent back button issues
             router.replace('/select-event');
@@ -206,8 +206,8 @@ export function AuthSessionWatcher({ children }: AuthSessionWatcherProps) {
     [],
   );
 
-  // Show loading state while checking authentication (but not on login page)
-  if (loading && !initialized && pathname !== '/login') {
+  // Show loading state while checking authentication (but not on login or root page)
+  if (loading && !initialized && pathname !== '/login' && pathname !== '/') {
     return loadingComponent;
   }
 

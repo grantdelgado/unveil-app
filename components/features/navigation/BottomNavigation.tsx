@@ -183,16 +183,16 @@ export function BottomNavigation({
     return null;
   }
 
-  // Role-specific styling
+  // Role-specific styling aligned with design system
   const roleStyles = {
     host: {
-      container: 'bg-gradient-to-r from-purple-600 to-rose-600',
+      container: 'bg-gradient-to-r from-purple-600 to-[#FF6B6B]',
       roleIndicator: 'bg-purple-100 text-purple-800',
       activeItem: 'bg-white/20 text-white',
       inactiveItem: 'text-white/70 hover:text-white hover:bg-white/10',
     },
     guest: {
-      container: 'bg-gradient-to-r from-rose-500 to-pink-500',
+      container: 'bg-gradient-to-r from-[#FF6B6B] to-[#FF5A5A]',
       roleIndicator: 'bg-rose-100 text-rose-800',
       activeItem: 'bg-white/20 text-white',
       inactiveItem: 'text-white/70 hover:text-white hover:bg-white/10',

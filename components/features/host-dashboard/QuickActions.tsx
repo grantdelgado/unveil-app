@@ -2,8 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import {
+  CardContainer,
+  SectionTitle,
+  SecondaryButton,
+  MicroCopy,
+  LoadingSpinner
+} from '@/components/ui';
 
 interface QuickActionsProps {
   eventId: string;
@@ -74,90 +79,86 @@ export function QuickActions({ eventId }: QuickActionsProps) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+      <CardContainer>
         <LoadingSpinner />
-      </div>
+      </CardContainer>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-      <h2 className="text-lg font-semibold text-stone-800 mb-4 flex items-center">
-        <span className="text-xl mr-2">⚡</span>
-        Quick Actions
-      </h2>
+    <CardContainer>
+      <div className="space-y-6">
+        <SectionTitle className="flex items-center">
+          <span className="text-xl mr-2">⚡</span>
+          Quick Actions
+        </SectionTitle>
 
-      <div className="space-y-4">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 bg-stone-50 rounded-lg">
-            <div className="text-xl font-bold text-stone-700">
-              {stats.totalParticipants}
+        <div className="space-y-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <div className="text-xl font-bold text-gray-700">
+                {stats.totalParticipants}
+              </div>
+              <MicroCopy>Participants</MicroCopy>
             </div>
-            <div className="text-xs text-stone-600">Participants</div>
-          </div>
-          <div className="text-center p-3 bg-amber-50 rounded-lg">
-            <div className="text-xl font-bold text-amber-700">
-              {stats.pendingRSVPs}
+            <div className="text-center p-3 bg-amber-50 rounded-lg">
+              <div className="text-xl font-bold text-amber-700">
+                {stats.pendingRSVPs}
+              </div>
+              <MicroCopy>Pending</MicroCopy>
             </div>
-            <div className="text-xs text-stone-600">Pending</div>
-          </div>
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-xl font-bold text-blue-700">
-              {stats.recentMessages}
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-xl font-bold text-blue-700">
+                {stats.recentMessages}
+              </div>
+              <MicroCopy>Messages</MicroCopy>
             </div>
-            <div className="text-xs text-stone-600">Messages</div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-2">
-          {stats.pendingRSVPs > 0 && (
-            <Button
-              onClick={handleSendReminder}
-              variant="outline"
-              size="sm"
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            {stats.pendingRSVPs > 0 && (
+              <SecondaryButton
+                onClick={handleSendReminder}
+                className="w-full"
+              >
+                📧 Send RSVP Reminder ({stats.pendingRSVPs})
+              </SecondaryButton>
+            )}
+
+            <SecondaryButton
               className="w-full"
+              onClick={() =>
+                window.open(
+                  `/host/events/${eventId}/dashboard?tab=messages`,
+                  '_self',
+                )
+              }
             >
-              📧 Send RSVP Reminder ({stats.pendingRSVPs})
-            </Button>
-          )}
+              💬 Send Message
+            </SecondaryButton>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() =>
-              window.open(
-                `/host/events/${eventId}/dashboard?tab=messages`,
-                '_self',
-              )
-            }
-          >
-            💬 Send Message
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => window.open(`/host/events/${eventId}`, '_blank')}
-          >
-            👁️ Preview Guest View
-          </Button>
-        </div>
-
-        {stats.totalParticipants === 0 && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-            <div className="text-sm text-purple-700 font-medium mb-1">
-              🚀 Get Started
-            </div>
-            <div className="text-xs text-purple-600">
-              Import your guest list to begin sending invitations
-            </div>
+            <SecondaryButton
+              className="w-full"
+              onClick={() => window.open(`/host/events/${eventId}`, '_blank')}
+            >
+              👁️ Preview Guest View
+            </SecondaryButton>
           </div>
-        )}
+
+          {stats.totalParticipants === 0 && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="text-sm text-purple-700 font-medium mb-1">
+                🚀 Get Started
+              </div>
+              <MicroCopy className="text-purple-600">
+                Import your guest list to begin sending invitations
+              </MicroCopy>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </CardContainer>
   );
 }

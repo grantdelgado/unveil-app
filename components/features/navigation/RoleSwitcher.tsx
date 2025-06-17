@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { SecondaryButton } from '@/components/ui';
 
 interface RoleSwitcherProps {
   currentEventId: string;
@@ -54,30 +55,32 @@ export function RoleSwitcher({
   }
 
   return (
-    <div className="flex items-center space-x-2 bg-white rounded-lg border border-stone-200 p-1">
+    <div className="flex items-center space-x-2 bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
       {availableRoles.includes('host') && (
-        <button
+        <SecondaryButton
           onClick={() => handleRoleSwitch('host')}
-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+          fullWidth={false}
+          className={`!px-3 !py-1 !text-sm transition-colors ${
             currentRole === 'host'
-              ? 'bg-purple-100 text-purple-700'
-              : 'text-stone-600 hover:text-stone-800'
+              ? '!bg-purple-100 !text-purple-700 !border-purple-200'
+              : '!text-gray-600 hover:!text-gray-800 !border-transparent'
           }`}
         >
           Host View
-        </button>
+        </SecondaryButton>
       )}
       {availableRoles.includes('guest') && (
-        <button
+        <SecondaryButton
           onClick={() => handleRoleSwitch('guest')}
-          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+          fullWidth={false}
+          className={`!px-3 !py-1 !text-sm transition-colors ${
             currentRole === 'guest'
-              ? 'bg-purple-100 text-purple-700'
-              : 'text-stone-600 hover:text-stone-800'
+              ? '!bg-rose-100 !text-rose-700 !border-rose-200'
+              : '!text-gray-600 hover:!text-gray-800 !border-transparent'
           }`}
         >
           Guest View
-        </button>
+        </SecondaryButton>
       )}
     </div>
   );

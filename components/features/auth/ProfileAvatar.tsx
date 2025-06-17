@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { IconButton } from '@/components/ui';
 
 export default function ProfileAvatar() {
   const router = useRouter();
@@ -16,9 +17,10 @@ export default function ProfileAvatar() {
   }
 
   return (
-    <button
+    <IconButton
       onClick={() => router.push('/profile')}
-      className="w-10 h-10 rounded-full bg-white border border-stone-200 flex items-center justify-center hover:ring-2 hover:ring-purple-200 hover:border-purple-300 transition-all duration-200 shadow-sm hover:shadow-md"
+      size="md"
+      className="bg-white border border-gray-200 hover:ring-2 hover:ring-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md"
       aria-label="Profile"
     >
       {/* User icon with brand styling */}
@@ -26,6 +28,6 @@ export default function ProfileAvatar() {
         <circle cx="12" cy="8" r="4" fill="#6b7280" />
         <ellipse cx="12" cy="17" rx="7" ry="4" fill="#9ca3af" />
       </svg>
-    </button>
+    </IconButton>
   );
 }

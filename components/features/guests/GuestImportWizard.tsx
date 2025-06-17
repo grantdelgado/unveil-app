@@ -4,6 +4,8 @@ import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase/client';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { CardContainer } from '@/components/ui/CardContainer';
+import { SectionTitle, FieldLabel, MicroCopy } from '@/components/ui/Typography';
 
 interface GuestImportWizardProps {
   eventId: string;
@@ -132,20 +134,18 @@ export function GuestImportWizard({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+      <CardContainer>
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner />
           <span className="ml-3">Processing guests...</span>
         </div>
-      </div>
+      </CardContainer>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-      <h2 className="text-xl font-semibold text-stone-800 mb-6">
-        Import Guests
-      </h2>
+    <CardContainer>
+      <SectionTitle>Import Guests</SectionTitle>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -155,9 +155,9 @@ export function GuestImportWizard({
 
       {step === 'method' && (
         <div className="space-y-4">
-          <p className="text-stone-600">
+          <MicroCopy>
             How would you like to add guests to your event?
-          </p>
+          </MicroCopy>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
@@ -165,22 +165,22 @@ export function GuestImportWizard({
                 setStep('manual');
                 handleAddManualGuest();
               }}
-              className="p-6 border-2 border-stone-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
+              className="p-6 border-2 border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
             >
               <div className="text-3xl mb-3">✍️</div>
-              <div className="font-semibold text-stone-800">Add Manually</div>
-              <div className="text-sm text-stone-600">
+              <div className="font-semibold text-gray-800">Add Manually</div>
+              <div className="text-sm text-gray-600">
                 Enter guest details one by one
               </div>
             </button>
 
             <button
               onClick={() => setStep('csv')}
-              className="p-6 border-2 border-stone-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
+              className="p-6 border-2 border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-colors text-left"
             >
               <div className="text-3xl mb-3">📄</div>
-              <div className="font-semibold text-stone-800">Upload CSV</div>
-              <div className="text-sm text-stone-600">
+              <div className="font-semibold text-gray-800">Upload CSV</div>
+              <div className="text-sm text-gray-600">
                 Import from a spreadsheet
               </div>
             </button>
@@ -191,7 +191,7 @@ export function GuestImportWizard({
       {step === 'manual' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-stone-800">Add Guests Manually</h3>
+            <h3 className="font-medium text-gray-800">Add Guests Manually</h3>
             <Button onClick={handleAddManualGuest} size="sm">
               Add Another
             </Button>
@@ -201,64 +201,68 @@ export function GuestImportWizard({
             {guests.map((guest, index) => (
               <div
                 key={index}
-                className="border border-stone-200 rounded-lg p-4"
+                className="border border-gray-200 rounded-lg p-4"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Full Name *
-                    </label>
+                    <FieldLabel htmlFor={`guest-${index}-name`} required>
+                      Full Name
+                    </FieldLabel>
                     <input
+                      id={`guest-${index}-name`}
                       type="text"
                       value={guest.fullName}
                       onChange={(e) =>
                         handleUpdateGuest(index, 'fullName', e.target.value)
                       }
                       placeholder="John Doe"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
-                      Phone Number *
-                    </label>
+                    <FieldLabel htmlFor={`guest-${index}-phone`} required>
+                      Phone Number
+                    </FieldLabel>
                     <input
+                      id={`guest-${index}-phone`}
                       type="tel"
                       value={guest.phone}
                       onChange={(e) =>
                         handleUpdateGuest(index, 'phone', e.target.value)
                       }
                       placeholder="+1 (555) 123-4567"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                    <FieldLabel htmlFor={`guest-${index}-email`}>
                       Email (Optional)
-                    </label>
+                    </FieldLabel>
                     <input
+                      id={`guest-${index}-email`}
                       type="email"
                       value={guest.email || ''}
                       onChange={(e) =>
                         handleUpdateGuest(index, 'email', e.target.value)
                       }
                       placeholder="john@example.com"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                    <FieldLabel htmlFor={`guest-${index}-role`}>
                       Role
-                    </label>
+                    </FieldLabel>
                     <select
+                      id={`guest-${index}-role`}
                       value={guest.role || 'guest'}
                       onChange={(e) =>
                         handleUpdateGuest(index, 'role', e.target.value)
                       }
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="guest">Guest</option>
                       <option value="host">Host</option>
@@ -267,17 +271,18 @@ export function GuestImportWizard({
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <FieldLabel htmlFor={`guest-${index}-notes`}>
                     Notes (Optional)
-                  </label>
+                  </FieldLabel>
                   <input
+                    id={`guest-${index}-notes`}
                     type="text"
                     value={guest.notes || ''}
                     onChange={(e) =>
                       handleUpdateGuest(index, 'notes', e.target.value)
                     }
                     placeholder="Plus one, dietary restrictions, etc."
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -296,9 +301,9 @@ export function GuestImportWizard({
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t">
-            <div className="text-sm text-stone-600">
+            <MicroCopy>
               {validGuests.length} of {guests.length} guests are valid
-            </div>
+            </MicroCopy>
             <div className="flex space-x-3">
               <Button onClick={onClose} variant="outline">
                 Cancel
@@ -318,25 +323,23 @@ export function GuestImportWizard({
       {step === 'csv' && (
         <div className="space-y-6">
           <div>
-            <h3 className="font-medium text-stone-800 mb-2">CSV Import</h3>
-            <p className="text-stone-600 text-sm mb-4">
+            <h3 className="font-medium text-gray-800 mb-2">CSV Import</h3>
+            <MicroCopy className="mb-4">
               This feature is coming soon. For now, please use the manual import
               option.
-            </p>
+            </MicroCopy>
 
-            <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-              <div className="text-sm text-stone-600">
-                <p className="mb-2">
-                  When available, your CSV should include these columns:
-                </p>
-                <ul className="list-disc ml-5 space-y-1">
-                  <li>Full Name (required)</li>
-                  <li>Phone Number (required)</li>
-                  <li>Email (optional)</li>
-                  <li>Role (guest/host, optional)</li>
-                  <li>Notes (optional)</li>
-                </ul>
-              </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <MicroCopy>
+                When available, your CSV should include these columns:
+              </MicroCopy>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>Full Name (required)</li>
+                <li>Phone Number (required)</li>
+                <li>Email (optional)</li>
+                <li>Role (guest/host, optional)</li>
+                <li>Notes (optional)</li>
+              </ul>
             </div>
           </div>
 
@@ -350,6 +353,6 @@ export function GuestImportWizard({
           </div>
         </div>
       )}
-    </div>
+    </CardContainer>
   );
 }
