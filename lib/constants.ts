@@ -28,10 +28,10 @@ export const ROUTES = {
 // Database Constants
 export const DB_ENUMS = {
   RSVP_STATUS: {
-    ATTENDING: 'Attending',
-    DECLINED: 'Declined',
-    MAYBE: 'Maybe',
-    PENDING: 'Pending',
+    ATTENDING: 'attending',
+    DECLINED: 'declined',
+    MAYBE: 'maybe',
+    PENDING: 'pending',
   },
   MESSAGE_TYPE: {
     DIRECT: 'direct',

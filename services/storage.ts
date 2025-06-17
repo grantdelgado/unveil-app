@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { validateMediaFile, MEDIA_CONSTRAINTS } from './media'
 import type { MediaType } from '@/lib/supabase/types'
+import { logMedia, logMediaError } from '@/lib/logger'
 
 // Storage response types for consistency
 export type StorageUploadResponse = {
@@ -25,7 +26,7 @@ export type StorageUrlResponse = {
 
 // Storage error handling
 const handleStorageError = (error: unknown, context: string) => {
-  console.error(`Storage error in ${context}:`, error)
+  logMediaError(`Storage error in ${context}`, error, context)
   
   const storageError = error as { message?: string }
   
@@ -53,7 +54,7 @@ const handleStorageError = (error: unknown, context: string) => {
 }
 
 // Enhanced file validation for storage
-export const validateFileForStorage = (file: File): { 
+export const validateFileForStorage = async (file: File): Promise<{ 
   isValid: boolean; 
   error?: string; 
   mediaType?: MediaType;
@@ -62,8 +63,8 @@ export const validateFileForStorage = (file: File): {
     type: string;
     name: string;
   }
-} => {
-  const validation = validateMediaFile(file)
+}> => {
+  const validation = await validateMediaFile(file)
   
   if (!validation.isValid) {
     return validation
@@ -88,7 +89,7 @@ export const uploadFile = async (
 ): Promise<StorageUploadResponse> => {
   try {
     // Validate file before upload
-    const validation = validateFileForStorage(file)
+    const validation = await validateFileForStorage(file)
     if (!validation.isValid) {
       return {
         data: null,
@@ -97,7 +98,7 @@ export const uploadFile = async (
       }
     }
     
-    console.log(`Uploading file to ${bucket}/${path}`, {
+    logMedia(`Uploading file to ${bucket}/${path}`, {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
@@ -112,7 +113,7 @@ export const uploadFile = async (
         ...options
       })
     
-    console.log('Upload result:', result)
+    logMedia('Upload result', result)
     
     if (result.error) {
       return {
@@ -155,15 +156,9 @@ export const getPublicUrl = (bucket: string, path: string): StorageUrlResponse =
 
 export const deleteFile = async (bucket: string, path: string) => {
   try {
-    const result = await supabase.storage
+    return await supabase.storage
       .from(bucket)
       .remove([path])
-    
-    if (result.error) {
-      throw result.error
-    }
-    
-    return result
   } catch (error) {
     handleStorageError(error, 'deleteFile')
   }
@@ -175,19 +170,13 @@ export const listFiles = async (bucket: string, path?: string, options?: {
   sortBy?: { column: string; order: 'asc' | 'desc' };
 }) => {
   try {
-    const result = await supabase.storage
+    return await supabase.storage
       .from(bucket)
       .list(path, {
         limit: options?.limit || 100,
         offset: options?.offset || 0,
         sortBy: options?.sortBy || { column: 'created_at', order: 'desc' }
       })
-    
-    if (result.error) {
-      throw result.error
-    }
-    
-    return result
   } catch (error) {
     handleStorageError(error, 'listFiles')
   }
@@ -232,7 +221,7 @@ export const createSignedUrl = async (
 export const uploadAvatar = async (userId: string, file: File) => {
   try {
     // Validate it's an image
-    const validation = validateFileForStorage(file)
+    const validation = await validateFileForStorage(file)
     if (!validation.isValid) {
       throw new Error(validation.error)
     }
@@ -258,7 +247,7 @@ export const uploadEventMedia = async (
 ) => {
   try {
     // Validate file
-    const validation = validateFileForStorage(file)
+    const validation = await validateFileForStorage(file)
     if (!validation.isValid) {
       throw new Error(validation.error)
     }

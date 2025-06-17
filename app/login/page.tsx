@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+
+import { logAuth, logAuthError, logDev } from '@/lib/logger'
+import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services'
 
 // Login flow steps
 type LoginStep = 'phone' | 'otp'
@@ -34,28 +36,30 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      console.log('📱 Sending OTP to:', phone)
+      logAuth('Sending OTP to phone', { phone })
       
       const result = await sendOTP(phone)
       
       if (result.success) {
-        console.log('✅ OTP sent successfully:', {
+        logAuth('OTP sent successfully', {
           isDev: result.isDev
         })
         
         if (result.isDev) {
           // Dev phone authenticated directly
-          console.log('🛠️ Development mode: Direct authentication successful', {
+          logDev('Development mode: Direct authentication successful', {
             isNewUser: result.isNewUser
           })
           setError('') // Clear any previous errors
           
           // For dev authentication, show a success message and let AuthSessionWatcher handle routing
           // Don't immediately clear loading state as we want to show "Authenticating..." until redirect
-          console.log('⏳ Waiting for AuthSessionWatcher to handle routing...')
+          logDev('Waiting for AuthSessionWatcher to handle routing...')
           
-          // Clear loading after a short delay if redirect doesn't happen
+          // Force redirect after a short delay as a fallback
           setTimeout(() => {
+            logDev('3-second timeout reached, forcing redirect to /select-event')
+            router.replace('/select-event')
             setLoading(false)
           }, 3000) // 3 second timeout
           
@@ -67,7 +71,7 @@ export default function LoginPage() {
         setStep('otp')
         setLoading(false) // Only clear loading for regular OTP flow
       } else {
-        console.error('❌ Failed to send OTP:', result.error)
+        logAuthError('Failed to send OTP', result.error)
         
         // Better error messages for development mode
         let errorMessage = result.error || 'Failed to send verification code. Please try again.'
@@ -82,7 +86,7 @@ export default function LoginPage() {
         setLoading(false)
       }
     } catch (err) {
-      console.error('❌ Unexpected OTP send error:', err)
+      logAuthError('Unexpected OTP send error', err)
       setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
@@ -103,12 +107,12 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      console.log('🔐 Verifying OTP for:', phone)
+      logAuth('Verifying OTP for phone', { phone })
       
       const result = await verifyOTP(phone, otp)
       
       if (result.success) {
-        console.log('✅ Authentication successful:', {
+        logAuth('Authentication successful', {
           userId: result.userId,
           isNewUser: result.isNewUser
         })
@@ -120,11 +124,11 @@ export default function LoginPage() {
           router.push('/select-event')
         }
       } else {
-        console.error('❌ OTP verification failed:', result.error)
+        logAuthError('OTP verification failed', result.error)
         setError(result.error || 'Invalid verification code. Please try again.')
       }
     } catch (err) {
-      console.error('❌ Unexpected OTP verification error:', err)
+      logAuthError('Unexpected OTP verification error', err)
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
@@ -181,8 +185,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+    <div className="min-h-screen bg-app flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">💍</div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Unveil</h1>

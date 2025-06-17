@@ -3,10 +3,9 @@ import type {
   MessageInsert, 
   MessageUpdate, 
   MessageType, 
-  MessageWithSender,
-  ServiceResponse,
-  ServiceResponseArray
+  MessageWithSender
 } from '@/lib/supabase/types'
+import { logDatabaseError } from '@/lib/logger'
 
 // Message constraints
 const MAX_MESSAGE_LENGTH = 2000
@@ -14,7 +13,7 @@ const MIN_MESSAGE_LENGTH = 1
 
 // Error handling for database constraints
 const handleDatabaseError = (error: unknown, context: string) => {
-  console.error(`Database error in ${context}:`, error)
+  logDatabaseError(`Database error in ${context}`, error, context)
   
   const dbError = error as { code?: string; message?: string }
   
@@ -60,9 +59,9 @@ export const validateMessage = (content: string): { isValid: boolean; error?: st
 }
 
 // Messaging service functions
-export const getEventMessages = async (eventId: string): Promise<ServiceResponseArray<MessageWithSender>> => {
+export const getEventMessages = async (eventId: string) => {
   try {
-    const result = await supabase
+    return await supabase
       .from('messages')
       .select(`
         *,
@@ -70,20 +69,12 @@ export const getEventMessages = async (eventId: string): Promise<ServiceResponse
       `)
       .eq('event_id', eventId)
       .order('created_at', { ascending: true })
-    
-    return {
-      data: result.data || [],
-      error: result.error ? new Error(result.error.message) : null
-    }
   } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error : new Error('Failed to get event messages')
-    }
+    handleDatabaseError(error, 'getEventMessages')
   }
 }
 
-export const sendMessage = async (messageData: MessageInsert): Promise<ServiceResponse<MessageWithSender>> => {
+export const sendMessage = async (messageData: MessageInsert) => {
   try {
     // Validate message content
     if (messageData.content) {
@@ -93,7 +84,7 @@ export const sendMessage = async (messageData: MessageInsert): Promise<ServiceRe
       }
     }
     
-    const result = await supabase
+    return await supabase
       .from('messages')
       .insert(messageData)
       .select(`
@@ -101,16 +92,8 @@ export const sendMessage = async (messageData: MessageInsert): Promise<ServiceRe
         sender:public_user_profiles!messages_sender_user_id_fkey(*)
       `)
       .single()
-    
-    return {
-      data: result.data,
-      error: result.error ? new Error(result.error.message) : null
-    }
   } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error : new Error('Failed to send message')
-    }
+    handleDatabaseError(error, 'sendMessage')
   }
 }
 

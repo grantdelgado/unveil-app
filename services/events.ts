@@ -4,10 +4,11 @@ import type {
   EventUpdate, 
   EventParticipantInsert
 } from '@/lib/supabase/types'
+import { logDatabaseError } from '@/lib/logger'
 
 // Error handling for database constraints
 const handleDatabaseError = (error: unknown, context: string) => {
-  console.error(`Database error in ${context}:`, error)
+  logDatabaseError(`Database error in ${context}`, error, context)
   
   const dbError = error as { code?: string; message?: string }
   

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import type { UserInsert } from '@/lib/supabase/types'
+import { logAuth, logAuthError, logDev } from '@/lib/logger'
 
 // Development phone whitelist - retrieved from Supabase auth.users with @dev.unveil.app emails
 const DEV_PHONE_WHITELIST = [
@@ -32,7 +33,7 @@ const MIN_RETRY_INTERVAL = 60 * 1000 // 1 minute between attempts
 
 // Error handling for database constraints
 const handleDatabaseError = (error: unknown, context: string) => {
-  console.error(`Database error in ${context}:`, error)
+  logAuthError(`Database error in ${context}`, error, context)
   
   const dbError = error as { code?: string; message?: string }
   
@@ -151,7 +152,7 @@ export const getCurrentUser = async () => {
     const { data: { user }, error } = await supabase.auth.getUser()
     return { user, error }
   } catch (error) {
-    console.error('Error getting current user:', error)
+    logAuthError('Error getting current user', error)
     return { user: null, error }
   }
 }
@@ -161,7 +162,7 @@ export const getCurrentSession = async () => {
     const { data: { session }, error } = await supabase.auth.getSession()
     return { session, error }
   } catch (error) {
-    console.error('Error getting current session:', error)
+    logAuthError('Error getting current session', error)
     return { session: null, error }
   }
 }
@@ -171,7 +172,7 @@ export const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     return { error }
   } catch (error) {
-    console.error('Error signing out:', error)
+    logAuthError('Error signing out', error)
     return { error }
   }
 }
@@ -187,7 +188,7 @@ export const sendOTP = async (phone: string): Promise<{
     // Normalize phone to E.164 format
     const normalizedPhone = normalizePhoneNumber(phone)
     
-    console.log('📱 Sending OTP to:', { 
+    logAuth('Sending OTP to phone', { 
       originalPhone: phone, 
       normalizedPhone 
     })
@@ -204,7 +205,7 @@ export const sendOTP = async (phone: string): Promise<{
     
     // Check if development phone - bypass OTP and create direct session
     if (isDevPhone(normalizedPhone)) {
-      console.log('🛠️ Development phone detected, bypassing OTP and creating direct session')
+      logDev('Development phone detected, bypassing OTP and creating direct session')
       
       try {
         // Get the corresponding dev email for this phone (matches auth table format)
@@ -212,7 +213,7 @@ export const sendOTP = async (phone: string): Promise<{
         const devEmail = `${phoneForEmail}@dev.unveil.app`
         const devPassword = `dev-${normalizedPhone.slice(-4)}-2024` // Match dev-setup.ts pattern
         
-        console.log('🔐 Dev authentication attempt:', {
+        logDev('Dev authentication attempt', {
           normalizedPhone,
           phoneForEmail,
           devEmail,
@@ -226,13 +227,13 @@ export const sendOTP = async (phone: string): Promise<{
         })
         
         if (authData?.user && authData?.session) {
-          console.log('✅ Dev user signed in successfully:', authData.user.id)
+          logAuth('Dev user signed in successfully', { userId: authData.user.id })
           
           // Handle user profile creation/lookup
           const userResult = await handleUserCreation(normalizedPhone, authData.user.id)
           
           if (!userResult.success) {
-            console.error('❌ Failed to handle user profile:', userResult.error)
+            logAuthError('Failed to handle user profile', userResult.error)
             return {
               success: false,
               isDev: true,
@@ -248,7 +249,7 @@ export const sendOTP = async (phone: string): Promise<{
         }
         
         if (authError) {
-          console.error('❌ Dev authentication failed:', authError)
+          logAuthError('Dev authentication failed', authError)
           return {
             success: false,
             isDev: true,
@@ -263,7 +264,7 @@ export const sendOTP = async (phone: string): Promise<{
         }
         
       } catch (error) {
-        console.error('❌ Dev authentication error:', error)
+        logAuthError('Dev authentication error', error)
         return {
           success: false,
           isDev: true,
@@ -281,7 +282,7 @@ export const sendOTP = async (phone: string): Promise<{
     })
     
     if (error) {
-      console.error('❌ Failed to send OTP:', error)
+      logAuthError('Failed to send OTP', error)
       return {
         success: false,
         isDev: false,
@@ -292,14 +293,14 @@ export const sendOTP = async (phone: string): Promise<{
     // Record attempt for rate limiting
     recordOTPAttempt(normalizedPhone)
     
-    console.log('✅ OTP sent successfully')
+    logAuth('OTP sent successfully')
     return {
       success: true,
       isDev: false
     }
     
   } catch (error) {
-    console.error('❌ OTP send error:', error)
+    logAuthError('OTP send error', error)
     return {
       success: false,
       isDev: false,
@@ -319,11 +320,11 @@ export const verifyOTP = async (phone: string, token: string): Promise<{
     // Normalize phone to E.164 format
     const normalizedPhone = normalizePhoneNumber(phone)
     
-    console.log('🔐 Verifying OTP for:', normalizedPhone)
+    logAuth('Verifying OTP for phone', { normalizedPhone })
     
     // Development phones should not reach this function - they authenticate directly in sendOTP
     if (isDevPhone(normalizedPhone)) {
-      console.error('🛠️ Dev phone should not reach verifyOTP - authentication handled in sendOTP')
+      logAuthError('Dev phone should not reach verifyOTP - authentication handled in sendOTP')
       return {
         success: false,
         isNewUser: false,
@@ -339,7 +340,7 @@ export const verifyOTP = async (phone: string, token: string): Promise<{
     })
     
     if (otpError) {
-      console.error('❌ OTP verification failed:', otpError)
+      logAuthError('OTP verification failed', otpError)
       return {
         success: false,
         isNewUser: false,
@@ -355,7 +356,7 @@ export const verifyOTP = async (phone: string, token: string): Promise<{
       }
     }
     
-    console.log('✅ OTP verified successfully:', authData.user.id)
+    logAuth('OTP verified successfully', { userId: authData.user.id })
     
     // Clear rate limiting on successful verification
     clearOTPRateLimit(normalizedPhone)
@@ -370,7 +371,7 @@ export const verifyOTP = async (phone: string, token: string): Promise<{
     }
     
   } catch (error) {
-    console.error('❌ OTP verification error:', error)
+    logAuthError('OTP verification error', error)
     return {
       success: false,
       isNewUser: false,
@@ -396,7 +397,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
     
     if (lookupError && lookupError.code !== 'PGRST116') {
       // PGRST116 = no rows returned, which is expected for new users
-      console.error('❌ User lookup failed:', lookupError)
+      logAuthError('User lookup failed', lookupError)
       return {
         success: false,
         isNewUser: false,
@@ -407,7 +408,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
     if (existingUser) {
       // Step 2a: Returning user - verify session ID matches
       if (existingUser.id === userId) {
-        console.log('✅ Returning user with matching session ID:', existingUser.id)
+        logAuth('Returning user with matching session ID', { userId: existingUser.id })
         return {
           success: true,
           isNewUser: false,
@@ -415,7 +416,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
         }
       } else {
         // This should not happen with proper OTP flow, but handle gracefully
-        console.warn('⚠️ Existing user found but auth.uid() mismatch', {
+        logAuth('Existing user found but auth.uid() mismatch', {
           existingUserId: existingUser.id,
           sessionUserId: userId,
           phone: normalizedPhone
@@ -432,7 +433,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
     }
     
     // Step 2b: New user - create profile in users table
-    console.log('👤 Creating new user profile for:', normalizedPhone)
+    logAuth('Creating new user profile for phone', { normalizedPhone })
     
     const newUserData: UserInsert = {
       id: userId, // Use the authenticated session user ID
@@ -449,7 +450,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
       .single()
     
     if (createError) {
-      console.error('❌ User creation failed:', createError)
+      logAuthError('User creation failed', createError)
       return {
         success: false,
         isNewUser: true,
@@ -457,7 +458,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
       }
     }
     
-    console.log('✅ New user created:', newUser.id)
+    logAuth('New user created', { userId: newUser.id })
     
     return {
       success: true,
@@ -466,7 +467,7 @@ const handleUserCreation = async (normalizedPhone: string, userId: string): Prom
     }
     
   } catch (error) {
-    console.error('❌ User creation error:', error)
+    logAuthError('User creation error', error)
     return {
       success: false,
       isNewUser: false,
@@ -493,7 +494,7 @@ export const getCurrentUserProfile = async () => {
     
     return { data: profile, error: profileError }
   } catch (error) {
-    console.error('Error fetching user profile:', error)
+    logAuthError('Error fetching user profile', error)
     return { data: null, error }
   }
 }

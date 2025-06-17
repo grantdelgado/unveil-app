@@ -65,7 +65,7 @@ export default function SelectEventPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-stone-600">Loading your events...</p>
@@ -75,7 +75,7 @@ export default function SelectEventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app">
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         {/* App Header */}
         <div className="text-center mb-8">
@@ -133,7 +133,7 @@ export default function SelectEventPage() {
                     <button
                       key={event.event_id}
                       onClick={() => handleEventSelect(event)}
-                      className="w-full p-6 bg-white rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
+                      className="w-full p-6 bg-app rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -186,7 +186,7 @@ export default function SelectEventPage() {
                     <button
                       key={event.event_id}
                       onClick={() => handleEventSelect(event)}
-                      className="w-full p-6 bg-white rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
+                      className="w-full p-6 bg-app rounded-xl shadow-sm border border-stone-200 hover:shadow-md hover:border-stone-300 transition-all duration-200 text-left group"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

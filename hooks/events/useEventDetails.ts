@@ -1,24 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
+
+import type { EventWithHost, EventParticipantWithUser, EventDetailsHookResult, DatabaseError } from '@/lib/types'
+import { createDatabaseError } from '@/lib/types'
 import { supabase } from '@/lib/supabase/client'
-import { type EventWithHost, type EventParticipantWithUser } from '@/lib/supabase/types'
-// import { getEventParticipants } from '@/services/events'
-import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
+import { logGenericError } from '@/lib/logger'
 
-interface UseEventDetailsReturn {
-  event: EventWithHost | null
-  participantInfo: EventParticipantWithUser | null
-  loading: boolean
-  error: AppError | null
-  updateRSVP: (status: string) => Promise<{ success: boolean; error: string | null }>
-  refetch: () => void
-}
-
-export function useEventDetails(eventId: string | null, userId: string | null): UseEventDetailsReturn {
+export function useEventDetails(eventId: string | null, userId: string | null): EventDetailsHookResult {
   const [event, setEvent] = useState<EventWithHost | null>(null)
   const [participantInfo, setParticipantInfo] = useState<EventParticipantWithUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<AppError | null>(null)
+  const [error, setError] = useState<DatabaseError | null>(null)
 
   const fetchEventData = useCallback(async () => {
     const wrappedFetch = withErrorHandling(async () => {
@@ -111,15 +103,29 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
 
     const result = await wrappedFetch()
     if (result?.error) {
-      setError(result.error)
-      logError(result.error, 'useEventDetails.fetchEventData')
+      const dbError = createDatabaseError(
+        'QUERY_FAILED',
+        'Failed to fetch event details',
+        result.error,
+        { operation: 'fetchEventData', eventId, userId }
+      )
+      setError(dbError)
+      logGenericError('useEventDetails.fetchEventData', result.error)
       setLoading(false)
     }
     return result
   }, [eventId, userId])
 
   const updateRSVP = useCallback(async (status: string) => {
-    if (!participantInfo) return { success: false, error: 'No participant info available' }
+    if (!participantInfo) {
+      const validationError = createDatabaseError(
+        'NOT_NULL_VIOLATION',
+        'No participant info available',
+        undefined,
+        { operation: 'updateRSVP', status }
+      )
+      return { success: false, error: validationError }
+    }
 
     const wrappedUpdate = withErrorHandling(async () => {
       const { error } = await supabase
@@ -138,15 +144,21 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
 
     const result = await wrappedUpdate()
     if (result?.error) {
-      logError(result.error, 'useEventDetails.updateRSVP')
-      return { success: false, error: result.error.message }
+      const dbError = createDatabaseError(
+        'QUERY_FAILED',
+        'Failed to update RSVP status',
+        result.error,
+        { operation: 'updateRSVP', participantId: participantInfo.id, status }
+      )
+      logGenericError('useEventDetails.updateRSVP', result.error)
+      return { success: false, error: dbError }
     }
     return { success: true, error: null }
   }, [participantInfo])
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback(async () => {
     if (eventId && userId) {
-      fetchEventData()
+      await fetchEventData()
     }
   }, [fetchEventData, eventId, userId])
 
@@ -161,5 +173,9 @@ export function useEventDetails(eventId: string | null, userId: string | null): 
     error,
     updateRSVP,
     refetch,
+    isHost: !!event && !!userId && event.host_user_id === userId,
+    isParticipant: !!participantInfo,
+    canEdit: !!event && !!userId && event.host_user_id === userId,
+    data: { event, participantInfo }
   }
 } 

@@ -4,7 +4,7 @@ import {
   type MessageWithSender 
 } from '@/lib/supabase/types'
 import { sendMessage as sendMessageService } from '@/services/messaging'
-import { subscribeToEventMessages } from '@/lib/supabase/messaging'
+import { useEventSubscription } from '@/hooks/realtime'
 import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
 
@@ -111,12 +111,7 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
     message_type?: 'text' | 'announcement' | 'system'
   }) => {
     const wrappedSend = withErrorHandling(async () => {
-      const { error } = await sendMessageService(messageData)
-
-      if (error) {
-        throw new Error('Failed to send message')
-      }
-
+      await sendMessageService(messageData)
       return { success: true, error: null }
     }, 'useMessages.sendMessage')
 
@@ -136,11 +131,12 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
     fetchMessages()
   }, [fetchMessages])
 
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!eventId) return
-
-    const subscription = subscribeToEventMessages(eventId, (payload) => {
+  // Set up real-time subscription using centralized manager
+  const { isConnected, error: subscriptionError } = useEventSubscription({
+    eventId,
+    table: 'messages',
+    event: '*',
+    onDataChange: useCallback((payload) => {
       if (payload.eventType === 'INSERT') {
         // Refetch to get the new message with sender info
         fetchMessages()
@@ -150,12 +146,12 @@ export function useMessages(eventId: string | null): UseMessagesReturn {
         // Refetch to get updated message data
         fetchMessages()
       }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [eventId, fetchMessages])
+    }, [fetchMessages]),
+    onError: useCallback((error: Error) => {
+      logError(error, 'useMessages.subscription')
+    }, []),
+    enabled: Boolean(eventId)
+  })
 
   return {
     messages,

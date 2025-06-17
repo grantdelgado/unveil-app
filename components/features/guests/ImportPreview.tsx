@@ -115,12 +115,12 @@ export const ImportPreview: React.FC<ImportPreviewProps> = ({
                     <td className="px-4 py-2">
                       <span className={cn(
                         'px-2 py-1 rounded-full text-xs font-medium',
-                        guest.rsvp_status === 'Attending' && 'bg-green-100 text-green-800',
-                        guest.rsvp_status === 'Declined' && 'bg-red-100 text-red-800',
-                        guest.rsvp_status === 'Maybe' && 'bg-amber-100 text-amber-800',
-                        (!guest.rsvp_status || guest.rsvp_status === 'Pending') && 'bg-stone-100 text-stone-800'
+                        guest.rsvp_status === 'attending' && 'bg-green-100 text-green-800',
+                        guest.rsvp_status === 'declined' && 'bg-red-100 text-red-800',
+                        guest.rsvp_status === 'maybe' && 'bg-amber-100 text-amber-800',
+                        (!guest.rsvp_status || guest.rsvp_status === 'pending') && 'bg-stone-100 text-stone-800'
                       )}>
-                        {guest.rsvp_status || 'Pending'}
+                        {guest.rsvp_status ? guest.rsvp_status.charAt(0).toUpperCase() + guest.rsvp_status.slice(1) : 'Pending'}
                       </span>
                     </td>
                   </tr>

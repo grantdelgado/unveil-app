@@ -5,16 +5,16 @@ import { isValidEmail, isValidPhoneNumber, normalizePhoneNumber } from './utils'
 import type { EventParticipantInsert } from './supabase'
 
 // Guest import validation schema - phone is now required, name is optional
-export const guestImportSchema = z.object({
-  phone: z.string().min(1, 'Phone number is required').refine(isValidPhoneNumber, 'Invalid phone number format'),
-  guest_name: z.string().max(100, 'Name too long').optional().or(z.literal('')),
-  guest_email: z.string().email('Invalid email').optional().or(z.literal('')),
-  notes: z.string().max(1000, 'Notes too long').optional().or(z.literal('')),
+export const guestImportRowSchema = z.object({
+  guest_name: z.string().min(1, 'Guest name is required'),
+  guest_email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  rsvp_status: z.enum(['attending', 'declined', 'maybe', 'pending']).optional(),
+  notes: z.string().optional().or(z.literal('')),
   guest_tags: z.array(z.string()).optional(),
-  rsvp_status: z.enum(['Attending', 'Declined', 'Maybe', 'Pending']).optional(),
 })
 
-export type GuestImportData = z.infer<typeof guestImportSchema>
+export type GuestImportData = z.infer<typeof guestImportRowSchema>
 
 // Common column mappings that users might have - phone is now the primary identifier
 export const COMMON_COLUMN_MAPPINGS = {
@@ -260,13 +260,13 @@ export const validateImportedGuests = (
           if (value) {
             const normalizedStatus = value.toLowerCase()
             if (['attending', 'yes', 'going', 'accept'].includes(normalizedStatus)) {
-              guestData.rsvp_status = 'Attending'
+              guestData.rsvp_status = 'attending'
             } else if (['declined', 'no', 'not going', 'decline'].includes(normalizedStatus)) {
-              guestData.rsvp_status = 'Declined'
+              guestData.rsvp_status = 'declined'
             } else if (['maybe', 'perhaps', 'unsure'].includes(normalizedStatus)) {
-              guestData.rsvp_status = 'Maybe'
+              guestData.rsvp_status = 'maybe'
             } else {
-              guestData.rsvp_status = 'Pending'
+              guestData.rsvp_status = 'pending'
             }
           }
           break
@@ -279,7 +279,7 @@ export const validateImportedGuests = (
     }
     
     // Validate the guest data
-    const validation = guestImportSchema.safeParse(guestData)
+    const validation = guestImportRowSchema.safeParse(guestData)
     
     if (!validation.success) {
       validation.error.errors.forEach(err => {
@@ -354,9 +354,9 @@ export const validateImportFile = (file: File): { valid: boolean; error?: string
 export const generateSampleCSV = (): string => {
   const headers = ['Phone', 'Name', 'Email', 'Notes', 'Tags', 'RSVP Status']
   const sampleData = [
-    ['(555) 123-4567', 'John Smith', 'john@example.com', 'Vegetarian meal', 'Family,Groomsmen', 'Attending'],
-    ['(555) 987-6543', 'Jane Doe', 'jane@example.com', 'Plus one: Mike Johnson', 'Friends', 'Pending'],
-    ['(555) 555-0123', 'Bob Wilson', 'bob@example.com', 'Wheelchair accessible seating', 'Coworkers', 'Maybe'],
+    ['(555) 123-4567', 'John Smith', 'john@example.com', 'Vegetarian meal', 'Family,Groomsmen', 'attending'],
+    ['(555) 987-6543', 'Jane Doe', 'jane@example.com', 'Plus one: Mike Johnson', 'Friends', 'pending'],
+    ['(555) 555-0123', 'Bob Wilson', 'bob@example.com', 'Wheelchair accessible seating', 'Coworkers', 'maybe'],
   ]
   
   const csvContent = [headers, ...sampleData]

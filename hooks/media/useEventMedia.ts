@@ -4,7 +4,7 @@ import {
   type MediaWithUploader 
 } from '@/lib/supabase/types'
 import { getEventMedia, uploadMedia as uploadMediaService } from '@/services/media'
-import { subscribeToEventMedia } from '@/lib/supabase/media'
+import { useEventSubscription } from '@/hooks/realtime'
 import { logError, type AppError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
 
@@ -49,19 +49,8 @@ export function useEventMedia(eventId: string | null): UseEventMediaReturn {
 
       const result = await getEventMedia(eventId)
 
-      if (result.error) {
-        // Handle permission errors gracefully
-        if (result.error.message?.includes('permission')) {
-          console.warn('⚠️ No permission to access media for this event')
-          setMedia([])
-          setLoading(false)
-          return
-        }
-        throw new Error(result.error.message || 'Failed to fetch media')
-      }
-
       // Map the data to match MediaWithUploader type
-      const mappedData = (result.data || []).map((item: MediaWithUploader) => ({
+      const mappedData = (result?.data || []).map((item: MediaWithUploader) => ({
         ...item,
         uploader: item.uploader || null
       })) as MediaWithUploader[]
@@ -82,11 +71,7 @@ export function useEventMedia(eventId: string | null): UseEventMediaReturn {
     caption?: string
   }) => {
     const wrappedUpload = withErrorHandling(async () => {
-      const result = await uploadMediaService(mediaData)
-
-      if (result.error) {
-        throw new Error(result.error.message || 'Failed to upload media')
-      }
+      await uploadMediaService(mediaData)
 
       // Refresh media list after successful upload
       await fetchMedia()
@@ -109,23 +94,24 @@ export function useEventMedia(eventId: string | null): UseEventMediaReturn {
     fetchMedia()
   }, [fetchMedia])
 
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!eventId) return
-
-    const subscription = subscribeToEventMedia(eventId, (payload) => {
+  // Set up real-time subscription using centralized manager
+  const { isConnected, error: subscriptionError } = useEventSubscription({
+    eventId,
+    table: 'media',
+    event: '*',
+    onDataChange: useCallback((payload) => {
       if (payload.eventType === 'INSERT') {
         // Refetch to get the new media with uploader info
         fetchMedia()
       } else if (payload.eventType === 'DELETE') {
         setMedia(prev => prev.filter(m => m.id !== payload.old.id))
       }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [eventId, fetchMedia])
+    }, [fetchMedia]),
+    onError: useCallback((error: Error) => {
+      logError(error, 'useEventMedia.subscription')
+    }, []),
+    enabled: Boolean(eventId)
+  })
 
   return {
     media,

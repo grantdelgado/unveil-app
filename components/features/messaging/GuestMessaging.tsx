@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/app/reference/supabase.types'
 
@@ -16,7 +16,7 @@ interface GuestMessagingProps {
   currentUserId: string | null
 }
 
-export default function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
+function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
   const [messages, setMessages] = useState<MessageWithSender[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -81,7 +81,7 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
     fetchMessages()
   }, [fetchMessages])
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!newMessage.trim() || !currentUserId || sending) return
 
     setSending(true)
@@ -110,9 +110,9 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
     } finally {
       setSending(false)
     }
-  }
+  }, [newMessage, currentUserId, sending, eventId, fetchMessages])
 
-  const formatMessageTime = (timestamp: string) => {
+  const formatMessageTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
@@ -132,9 +132,9 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
         hour12: true
       })
     }
-  }
+  }, [])
 
-  const getMessageTypeStyle = (type: string, isOwnMessage: boolean) => {
+  const getMessageTypeStyle = useCallback((type: string, isOwnMessage: boolean) => {
     if (type === 'announcement') {
       return 'bg-purple-50 border border-purple-200 text-purple-900'
     }
@@ -144,11 +144,11 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
     }
     
     return 'bg-stone-100 text-stone-900'
-  }
+  }, [])
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+      <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
         <h2 className="text-xl font-medium text-stone-800 mb-4">Broadcasts</h2>
         <div className="flex items-center justify-center py-8">
           <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin mr-3"></div>
@@ -159,7 +159,7 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+    <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
       <h2 className="text-xl font-medium text-stone-800 mb-4">Broadcasts</h2>
 
       {/* Messages List */}
@@ -208,6 +208,7 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
           placeholder="Share a message with everyone..."
           className="flex-1 px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all"
           disabled={sending || !currentUserId}
+          maxLength={500}
         />
         <button
           onClick={sendMessage}
@@ -223,4 +224,6 @@ export default function GuestMessaging({ eventId, currentUserId }: GuestMessagin
       </div>
     </div>
   )
-} 
+}
+
+export default memo(GuestMessaging)

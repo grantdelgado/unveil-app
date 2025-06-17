@@ -46,7 +46,7 @@ export const LoadingPage: React.FC<{ message?: string }> = ({
   message = 'Loading...' 
 }) => {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="min-h-screen bg-app flex items-center justify-center">
       <div className="text-center">
         <LoadingSpinner size="lg" variant="secondary" className="mb-4" />
         <p className="text-stone-600">{message}</p>
@@ -59,7 +59,7 @@ export const LoadingCard: React.FC<{ message?: string }> = ({
   message = 'Loading...' 
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+    <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
       <div className="flex items-center justify-center py-8">
         <LoadingSpinner size="md" className="mr-3" />
         <span className="text-stone-600">{message}</span>

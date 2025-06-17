@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import type { Database } from '@/app/reference/supabase.types'
@@ -12,7 +12,7 @@ interface GuestPhotoGalleryProps {
   currentUserId: string | null
 }
 
-export default function GuestPhotoGallery({ eventId, currentUserId }: GuestPhotoGalleryProps) {
+function GuestPhotoGallery({ eventId, currentUserId }: GuestPhotoGalleryProps) {
   const [media, setMedia] = useState<Media[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -101,7 +101,7 @@ export default function GuestPhotoGallery({ eventId, currentUserId }: GuestPhoto
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+      <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
         <h2 className="text-xl font-medium text-stone-800 mb-4">Moments</h2>
         <div className="bg-stone-50 rounded-lg p-8 text-center">
           <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin mx-auto mb-3"></div>
@@ -112,7 +112,7 @@ export default function GuestPhotoGallery({ eventId, currentUserId }: GuestPhoto
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+    <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-medium text-stone-800">Moments</h2>
         <span className="text-sm text-stone-500">{media.length} shared</span>
@@ -186,4 +186,6 @@ export default function GuestPhotoGallery({ eventId, currentUserId }: GuestPhoto
       )}
     </div>
   )
-} 
+}
+
+export default memo(GuestPhotoGallery)

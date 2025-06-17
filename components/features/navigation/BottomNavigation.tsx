@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { RoleSwitcher } from './RoleSwitcher'
+import { useEventSubscription } from '@/hooks/realtime'
 
 interface BottomNavigationProps {
   eventId: string
@@ -19,45 +20,35 @@ export function BottomNavigation({ eventId, role, className }: BottomNavigationP
   const [userRole, setUserRole] = useState<'host' | 'guest' | null>(null)
   const [eventTitle, setEventTitle] = useState<string>('')
 
-  useEffect(() => {
-    // Fetch unread message count (simplified - just get recent message count)
-    async function fetchUnreadCount() {
-      try {
-        const { data: messages } = await supabase
-          .from('messages')
-          .select('id')
-          .eq('event_id', eventId)
-          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+  // Fetch unread message count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('event_id', eventId)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
 
-        setUnreadCount(messages?.length || 0)
-      } catch (error) {
-        console.error('Error fetching unread count:', error)
-      }
-    }
-
-    fetchUnreadCount()
-
-    // Subscribe to real-time message updates
-    const channel = supabase
-      .channel(`messages:${eventId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-                      table: 'messages',
-          filter: `event_id=eq.${eventId}`
-        },
-        () => {
-          fetchUnreadCount()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+      setUnreadCount(messages?.length || 0)
+    } catch (error) {
+      console.error('Error fetching unread count:', error)
     }
   }, [eventId])
+
+  useEffect(() => {
+    fetchUnreadCount()
+  }, [fetchUnreadCount])
+
+  // Subscribe to real-time message updates using centralized manager
+  useEventSubscription({
+    eventId,
+    table: 'messages',
+    event: 'INSERT',
+    onDataChange: useCallback(() => {
+      fetchUnreadCount()
+    }, [fetchUnreadCount]),
+    enabled: Boolean(eventId)
+  })
 
   useEffect(() => {
     const determineUserRole = async () => {

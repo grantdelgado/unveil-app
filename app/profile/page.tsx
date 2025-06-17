@@ -56,7 +56,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app">
       <div className="max-w-2xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -70,7 +70,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
+        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Event Management Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
+        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-semibold text-stone-800 mb-2">Event Management</h2>
             <p className="text-stone-600">Create and manage your wedding events</p>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Account Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8">
           <h2 className="text-xl font-medium text-stone-800 mb-6">Account Actions</h2>
           
           <div className="space-y-4">

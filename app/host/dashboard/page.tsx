@@ -62,7 +62,7 @@ export default function HostDashboardPage() { // Renamed component for clarity
   const validHostedEvents = hostedEvents || [];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app">
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -82,7 +82,7 @@ export default function HostDashboardPage() { // Renamed component for clarity
           {validHostedEvents.length > 0 ? (
             <div className="grid gap-4">
               {validHostedEvents.map((event) => (
-                <div key={event.id} className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-all duration-200">
+                <div key={event.id} className="bg-app rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-all duration-200">
                   <Link href={`/host/events/${event.id}/dashboard`} className="block">
                     <h3 className="text-xl font-medium text-stone-800 hover:text-stone-900 transition-colors mb-2">{event.title}</h3>
                     {event.event_date && (

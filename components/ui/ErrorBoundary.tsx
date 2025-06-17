@@ -61,10 +61,10 @@ interface ErrorFallbackProps {
 }
 
 export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError }) => {
-  return (
-          <div className="min-h-screen bg-white flex items-center justify-center p-6">
+    return (
+    <div className="min-h-screen bg-app flex items-center justify-center p-6">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8 text-center">
+        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               className="w-8 h-8 text-red-600"
@@ -122,7 +122,7 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, rese
 
 export const CardErrorFallback: React.FC<ErrorFallbackProps> = ({ resetError }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+    <div className="bg-app rounded-xl shadow-sm border border-red-200 p-6">
       <div className="text-center">
         <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg

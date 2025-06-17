@@ -53,7 +53,7 @@ export const eventUpdateSchema = eventCreateSchema.partial()
 
 // Guest schemas
 export const rsvpUpdateSchema = z.object({
-  rsvp_status: z.enum(['Attending', 'Declined', 'Maybe', 'Pending']),
+  rsvp_status: z.enum(['attending', 'declined', 'maybe', 'pending']),
 })
 
 export const guestCreateSchema = z.object({

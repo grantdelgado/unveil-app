@@ -304,7 +304,7 @@ export default function CreateEventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <div className="min-h-screen bg-app py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -317,7 +317,7 @@ export default function CreateEventPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8">
           <form onSubmit={handleCreateEvent} className="space-y-8">
             
             {/* Event Details Section */}

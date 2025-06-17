@@ -33,7 +33,7 @@ export default function HomePage() {
   }
 
   return (
-          <main className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+          <main className="min-h-screen bg-app flex flex-col items-center justify-center p-6">
       <div className="max-w-2xl mx-auto text-center">
         {/* Brand Logo/Wordmark */}
         <div className="mb-8">

@@ -60,7 +60,7 @@ export default function GuestEventHomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-stone-600">Loading your invitation...</p>
@@ -71,7 +71,7 @@ export default function GuestEventHomePage() {
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <h1 className="text-2xl font-semibold text-stone-800 mb-2">We couldn&apos;t find this celebration</h1>
           <p className="text-stone-600 mb-6">{error?.message || 'This wedding hub may have been moved or is no longer available.'}</p>
@@ -114,9 +114,9 @@ export default function GuestEventHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-app">
       {/* Header */}
-      <div className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-stone-200/50 transition-all duration-300 ${
+      <div className={`sticky top-0 z-40 bg-app/95 backdrop-blur-sm border-b border-stone-200/50 transition-all duration-300 ${
         isScrolled 
           ? 'shadow-lg' 
           : 'shadow-sm'
@@ -171,7 +171,7 @@ export default function GuestEventHomePage() {
             </div>
 
             {/* Event Details Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+            <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8">
               <h2 className="text-xl font-medium text-stone-800 mb-6">Celebration Details</h2>
               
               <div className="space-y-6">
@@ -228,7 +228,7 @@ export default function GuestEventHomePage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* RSVP Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+            <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
               <h2 className="text-xl font-medium text-stone-800 mb-2">Will you be joining us?</h2>
               <p className="text-stone-600 text-sm mb-6">Let us know if you can celebrate with us</p>
               

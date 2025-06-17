@@ -2,7 +2,7 @@
 
 :root {
   /* Brand Colors - Unveil Palette */
-  --color-bg: #FFFFFF; /* Pure white background */
+  --color-bg: #fdfffc; /* Soft off-white background */
   --color-text: #333333;
   --color-muted: #888888;
   
@@ -34,7 +34,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #FFFFFF; /* Keep white even in dark mode for brand consistency */
+    --color-bg: #fdfffc; /* Keep soft off-white even in dark mode for brand consistency */
     --color-text: #333333;
     --color-muted: #666666;
   }
@@ -50,6 +50,11 @@ body {
 /* Brand pink utility class */
 .text-brand-pink {
   color: var(--color-brand-pink);
+}
+
+/* Custom background utility class */
+.bg-app {
+  background-color: var(--color-bg);
 }
 
 /* Safe area support for devices with home indicators */

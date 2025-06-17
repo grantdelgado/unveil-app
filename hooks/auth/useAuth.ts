@@ -1,24 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { getCurrentUser, getCurrentSession, signOut } from '@/services/auth'
-import { logError, type AppError } from '@/lib/error-handling'
+import { logError } from '@/lib/error-handling'
 import { withErrorHandling } from '@/lib/error-handling'
+import type { AuthHookResult, AuthError } from '@/lib/types'
+import { createAuthError } from '@/lib/types'
 import type { User, Session } from '@supabase/supabase-js'
 
-interface UseAuthReturn {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  error: AppError | null
-  signOut: () => Promise<{ error: AppError | null }>
-  refetchUser: () => Promise<void>
-}
-
-export function useAuth(): UseAuthReturn {
+export function useAuth(): AuthHookResult {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<AppError | null>(null)
+  const [error, setError] = useState<AuthError | null>(null)
 
   const fetchAuthState = useCallback(async () => {
     const wrappedFetch = withErrorHandling(async () => {
@@ -45,8 +38,14 @@ export function useAuth(): UseAuthReturn {
 
     const result = await wrappedFetch()
     if (result?.error) {
-      setError(result.error)
-      logError(result.error, 'useAuth.fetchAuthState')
+      const authError = createAuthError(
+        'SESSION_EXPIRED',
+        'Failed to fetch authentication state',
+        result.error,
+        { operation: 'fetchAuthState' }
+      )
+      setError(authError)
+      logError(authError, 'useAuth.fetchAuthState')
       setLoading(false)
     }
   }, [])
@@ -65,8 +64,14 @@ export function useAuth(): UseAuthReturn {
 
     const result = await wrappedSignOut()
     if (result?.error) {
-      logError(result.error, 'useAuth.signOut')
-      return { error: result.error }
+      const authError = createAuthError(
+        'SESSION_EXPIRED',
+        'Failed to sign out',
+        result.error,
+        { operation: 'signOut' }
+      )
+      logError(authError, 'useAuth.signOut')
+      return { error: authError }
     }
     return { error: null }
   }, [])
@@ -97,5 +102,9 @@ export function useAuth(): UseAuthReturn {
     error,
     signOut: handleSignOut,
     refetchUser,
+    isAuthenticated: !!user && !!session,
+    isLoading: loading,
+    data: { user, session },
+    refetch: refetchUser
   }
 } 

@@ -152,6 +152,7 @@ export function SMSAnnouncementModal({
               placeholder="Write your announcement here... e.g., 'Exciting news! We&apos;ve added a photo booth to the reception. Can&apos;t wait to see you all there! 📸'"
               className="w-full h-32 px-3 py-2 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-sm"
               disabled={isLoading}
+              maxLength={charLimit}
             />
             <div className="flex justify-between items-center mt-2">
               <div className="text-xs text-stone-500">

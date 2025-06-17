@@ -39,9 +39,13 @@ describe('Email Validation', () => {
 describe('Event Validation', () => {
   describe('eventCreateSchema', () => {
     it('should accept valid event data', () => {
+      // Create a future date (tomorrow)
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
       const validEvent = {
         title: 'Wedding Celebration',
-        event_date: '2025-06-15T18:00:00Z', // Future date
+        event_date: tomorrow.toISOString(), // Future date
         location: 'Napa Valley, CA',
         description: 'A beautiful wedding celebration'
       }
@@ -50,8 +54,12 @@ describe('Event Validation', () => {
     })
 
     it('should require title and event_date', () => {
+      // Create a future date
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
       expect(() => eventCreateSchema.parse({ title: 'Test' })).toThrow()
-      expect(() => eventCreateSchema.parse({ event_date: '2025-06-15T18:00:00Z' })).toThrow()
+      expect(() => eventCreateSchema.parse({ event_date: tomorrow.toISOString() })).toThrow()
     })
 
     it('should validate date format', () => {

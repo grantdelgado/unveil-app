@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { useGuests } from '@/hooks/guests'
 import { useEventMedia } from '@/hooks/media'
 import { useMessages } from '@/hooks/messaging'
+import { useEventSubscription } from '@/hooks/realtime'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { formatRelativeTime } from '@/lib/utils'
 // Database types import removed as it's not used
@@ -25,7 +25,7 @@ interface NotificationItem {
   action?: () => void
 }
 
-export function NotificationCenter({ eventId }: NotificationCenterProps) {
+function NotificationCenterComponent({ eventId }: NotificationCenterProps) {
   // Use our refactored hooks instead of direct queries
   const { guests } = useGuests(eventId)
   const { media } = useEventMedia(eventId)
@@ -36,177 +36,166 @@ export function NotificationCenter({ eventId }: NotificationCenterProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const now = new Date()
-      const dayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
-
-      const notificationItems: NotificationItem[] = []
-
-      // Process guest updates (RSVP changes) - using hook data
-      guests?.forEach((guest) => {
-        if (guest.rsvp_status && guest.created_at && guest.created_at > dayAgo.toISOString()) {
-          notificationItems.push({
-            id: `guest-${guest.id}`,
-            type: 'rsvp',
-            title: getRSVPTitle(guest.rsvp_status),
-            description: `${guest.user?.full_name || 'A guest'} ${getRSVPDescription(guest.rsvp_status)}`,
-            timestamp: guest.created_at,
-            isRead: false,
-            icon: getRSVPIcon(guest.rsvp_status),
-            color: getRSVPColor(guest.rsvp_status)
-          })
-        }
-      })
-
-      // Process media uploads - using hook data
-      media?.forEach((mediaItem) => {
-        if (mediaItem.created_at && mediaItem.created_at > dayAgo.toISOString()) {
-          const uploaderName = mediaItem.uploader?.full_name || 'A guest'
-          notificationItems.push({
-            id: `media-${mediaItem.id}`,
-            type: 'media',
-            title: 'New Photo Shared',
-            description: `${uploaderName} shared a ${mediaItem.media_type === 'video' ? 'video' : 'photo'}`,
-            timestamp: mediaItem.created_at,
-            isRead: false,
-            icon: mediaItem.media_type === 'video' ? '🎥' : '📸',
-            color: 'text-purple-600'
-          })
-        }
-      })
-
-      // Process messages (from guests only) - using hook data
-      messages?.forEach((message) => {
-        if (message.message_type !== 'announcement') { // Don't notify about host announcements
-          const senderName = (message.sender as { full_name?: string })?.full_name || 'A guest'
-          notificationItems.push({
-            id: `message-${message.id}`,
-            type: 'message',
-            title: 'New Message',
-            description: `${senderName}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`,
-            timestamp: message.created_at,
-            isRead: false,
-            icon: '💬',
-            color: 'text-blue-600'
-          })
-        }
-      })
-
-      // Sort by timestamp, handling null values
-      notificationItems.sort((a, b) => {
-        if (!a.timestamp) return 1
-        if (!b.timestamp) return -1
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      })
-
-      setNotifications(notificationItems.slice(0, 20)) // Keep last 20 notifications
-      setUnreadCount(notificationItems.length)
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [guests, media, messages])
-
-  useEffect(() => {
-    fetchNotifications()
-    
-    // Set up real-time subscriptions
-    const channel = supabase
-      .channel('event-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'event_participants',
-          filter: `event_id=eq.${eventId}`
-        },
-        (payload) => {
-          console.log('New participant:', payload)
-          setNotifications(prev => [{
-            id: Date.now().toString(),
-            type: 'general' as const,
-            title: 'New Participant',
-            description: 'A new participant joined the event',
-            timestamp: new Date().toISOString(),
-            isRead: false,
-            icon: '👋',
-            color: 'text-emerald-600'
-          }, ...prev])
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'event_participants',
-          filter: `event_id=eq.${eventId}`
-        },
-        (payload) => {
-          console.log('Participant updated:', payload)
-          if (payload.new.rsvp_status !== payload.old?.rsvp_status) {
-            setNotifications(prev => [{
-              id: Date.now().toString(),
-              type: 'rsvp' as const,
-              title: getRSVPTitle(payload.new.rsvp_status),
-              description: `Participant ${getRSVPDescription(payload.new.rsvp_status)}`,
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              icon: getRSVPIcon(payload.new.rsvp_status),
-              color: getRSVPColor(payload.new.rsvp_status)
-            }, ...prev])
-          }
-        }
-      )
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [fetchNotifications, eventId])
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-    setUnreadCount(0)
-  }
-
-  const getRSVPTitle = (status: string) => {
+  const getRSVPTitle = useCallback((status: string) => {
     switch (status.toLowerCase()) {
       case 'attending': return 'RSVP: Yes! 🎉'
       case 'declined': return 'RSVP: Can\'t Make It'
       case 'maybe': return 'RSVP: Maybe'
       default: return 'RSVP Update'
     }
-  }
+  }, [])
 
-  const getRSVPDescription = (status: string) => {
+  const getRSVPDescription = useCallback((status: string) => {
     switch (status.toLowerCase()) {
       case 'attending': return 'will be attending your special day!'
       case 'declined': return 'won\'t be able to attend'
       case 'maybe': return 'might be able to attend'
       default: return 'updated their RSVP'
     }
-  }
+  }, [])
 
-  const getRSVPIcon = (status: string) => {
+  const getRSVPIcon = useCallback((status: string) => {
     switch (status.toLowerCase()) {
       case 'attending': return '✅'
       case 'declined': return '❌'
       case 'maybe': return '❓'
       default: return '📝'
     }
-  }
+  }, [])
 
-  const getRSVPColor = (status: string) => {
+  const getRSVPColor = useCallback((status: string) => {
     switch (status.toLowerCase()) {
       case 'attending': return 'text-emerald-600'
       case 'declined': return 'text-red-600'
       case 'maybe': return 'text-yellow-600'
       default: return 'text-gray-600'
     }
-  }
+  }, [])
+
+  // Memoize notification processing to avoid recalculating on every render
+  const processedNotifications = useMemo(() => {
+    const now = new Date()
+    const dayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
+    const notificationItems: NotificationItem[] = []
+
+    // Process guest updates (RSVP changes) - using hook data
+    guests?.forEach((guest) => {
+      if (guest.rsvp_status && guest.created_at && guest.created_at > dayAgo.toISOString()) {
+        notificationItems.push({
+          id: `guest-${guest.id}`,
+          type: 'rsvp',
+          title: getRSVPTitle(guest.rsvp_status),
+          description: `${guest.user?.full_name || 'A guest'} ${getRSVPDescription(guest.rsvp_status)}`,
+          timestamp: guest.created_at,
+          isRead: false,
+          icon: getRSVPIcon(guest.rsvp_status),
+          color: getRSVPColor(guest.rsvp_status)
+        })
+      }
+    })
+
+    // Process media uploads - using hook data
+    media?.forEach((mediaItem) => {
+      if (mediaItem.created_at && mediaItem.created_at > dayAgo.toISOString()) {
+        const uploaderName = mediaItem.uploader?.full_name || 'A guest'
+        notificationItems.push({
+          id: `media-${mediaItem.id}`,
+          type: 'media',
+          title: 'New Photo Shared',
+          description: `${uploaderName} shared a ${mediaItem.media_type === 'video' ? 'video' : 'photo'}`,
+          timestamp: mediaItem.created_at,
+          isRead: false,
+          icon: mediaItem.media_type === 'video' ? '🎥' : '📸',
+          color: 'text-purple-600'
+        })
+      }
+    })
+
+    // Process messages (from guests only) - using hook data
+    messages?.forEach((message) => {
+      if (message.message_type !== 'announcement') { // Don't notify about host announcements
+        const senderName = (message.sender as { full_name?: string })?.full_name || 'A guest'
+        notificationItems.push({
+          id: `message-${message.id}`,
+          type: 'message',
+          title: 'New Message',
+          description: `${senderName}: ${message.content.substring(0, 50)}${message.content.length > 50 ? '...' : ''}`,
+          timestamp: message.created_at,
+          isRead: false,
+          icon: '💬',
+          color: 'text-blue-600'
+        })
+      }
+    })
+
+    // Sort by timestamp, handling null values
+    notificationItems.sort((a, b) => {
+      if (!a.timestamp) return 1
+      if (!b.timestamp) return -1
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    })
+
+    return notificationItems.slice(0, 20) // Keep last 20 notifications
+  }, [guests, media, messages, getRSVPTitle, getRSVPDescription, getRSVPIcon, getRSVPColor])
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setNotifications(processedNotifications)
+      setUnreadCount(processedNotifications.length)
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [processedNotifications])
+
+  // Set up real-time subscription for participant changes using centralized manager
+  useEventSubscription({
+    eventId,
+    table: 'event_participants',
+    event: '*',
+    onDataChange: useCallback((payload) => {
+      if (payload.eventType === 'INSERT') {
+        console.log('New participant:', payload)
+        setNotifications(prev => [{
+          id: Date.now().toString(),
+          type: 'general' as const,
+          title: 'New Participant',
+          description: 'A new participant joined the event',
+          timestamp: new Date().toISOString(),
+          isRead: false,
+          icon: '👋',
+          color: 'text-emerald-600'
+        }, ...prev])
+        setUnreadCount(prev => prev + 1)
+      } else if (payload.eventType === 'UPDATE') {
+        console.log('Participant updated:', payload)
+        if (payload.new.rsvp_status !== payload.old?.rsvp_status) {
+          setNotifications(prev => [{
+            id: Date.now().toString(),
+            type: 'rsvp' as const,
+            title: getRSVPTitle(payload.new.rsvp_status),
+            description: `Participant ${getRSVPDescription(payload.new.rsvp_status)}`,
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            icon: getRSVPIcon(payload.new.rsvp_status),
+            color: getRSVPColor(payload.new.rsvp_status)
+          }, ...prev])
+          setUnreadCount(prev => prev + 1)
+        }
+      }
+    }, [getRSVPTitle, getRSVPDescription, getRSVPIcon, getRSVPColor]),
+    enabled: Boolean(eventId)
+  })
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  const markAllAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+    setUnreadCount(0)
+  }, [])
 
   return (
     <div className="relative">
@@ -319,4 +308,6 @@ export function NotificationCenter({ eventId }: NotificationCenterProps) {
       )}
     </div>
   )
-} 
+}
+
+export const NotificationCenter = memo(NotificationCenterComponent)
