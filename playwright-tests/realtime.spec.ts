@@ -74,11 +74,13 @@ test.describe('Real-Time Features E2E Tests', () => {
     await authenticateUser(guestPage, TEST_USER_PHONE)
     
     // Create test event as host
-    testEventId = await createTestEvent(hostPage)
+    const eventId = await createTestEvent(hostPage)
     
-    if (!testEventId) {
+    if (!eventId) {
       throw new Error('Failed to create test event')
     }
+    
+    testEventId = eventId
   })
 
   test.afterAll(async () => {

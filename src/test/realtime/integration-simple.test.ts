@@ -20,8 +20,11 @@ vi.mock('@/lib/supabase/client', () => {
 import { subscribeToEventMessages } from '@/services/messaging'
 import { supabase } from '@/lib/supabase/client'
 
-// Get mock references
-const mockSupabase = supabase as any
+// Get mock references with proper typing
+const mockSupabase = supabase as unknown as {
+  channel: ReturnType<typeof vi.fn>
+  removeChannel: ReturnType<typeof vi.fn>
+}
 const mockSubscription = vi.mocked(mockSupabase.channel()).valueOf()
 
 describe('Real-Time Integration Tests (Simple)', () => {
@@ -254,12 +257,12 @@ describe('Real-Time Integration Tests (Simple)', () => {
 
       // Test with null callback
       expect(() => {
-        subscribeToEventMessages(eventId, null as any)
+        subscribeToEventMessages(eventId, null as unknown as () => void)
       }).not.toThrow()
 
       // Test with undefined callback
       expect(() => {
-        subscribeToEventMessages(eventId, undefined as any)
+        subscribeToEventMessages(eventId, undefined as unknown as () => void)
       }).not.toThrow()
     })
   })
