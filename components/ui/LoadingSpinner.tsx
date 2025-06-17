@@ -1,55 +1,43 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface LoadingSpinnerProps {
+interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'primary' | 'secondary' | 'white';
   className?: string;
-  label?: string;
+  text?: string;
 }
-
-const spinnerSizes = {
-  sm: 'w-4 h-4',
-  md: 'w-6 h-6',
-  lg: 'w-8 h-8',
-};
-
-const spinnerVariants = {
-  primary: 'border-stone-300 border-t-stone-600',
-  secondary: 'border-purple-200 border-t-purple-600',
-  white: 'border-white/30 border-t-white',
-};
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
-  variant = 'primary',
   className,
-  label = 'Loading...',
+  text = 'Loading...',
 }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12',
+  };
+
   return (
-    <div className={cn('flex items-center justify-center', className)}>
-      <div
-        className={cn(
-          'border-2 rounded-full animate-spin',
-          spinnerSizes[size],
-          spinnerVariants[variant],
-        )}
-        role="status"
-        aria-label={label}
-      />
-      <span className="sr-only">{label}</span>
+    <div className={cn('text-center', className)}>
+      <div className={cn(
+        'border-2 border-pink-300 border-t-[#FF6B6B] rounded-full animate-spin mx-auto mb-4',
+        sizeClasses[size]
+      )}></div>
+      {text && <p className="text-gray-500 text-base">{text}</p>}
     </div>
   );
 };
+
+LoadingSpinner.displayName = 'LoadingSpinner';
 
 export const LoadingPage: React.FC<{ message?: string }> = ({
   message = 'Loading...',
 }) => {
   return (
-    <div className="min-h-screen bg-app flex items-center justify-center">
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4 md:p-6">
       <div className="text-center">
-        <LoadingSpinner size="lg" variant="secondary" className="mb-4" />
-        <p className="text-stone-600">{message}</p>
+        <LoadingSpinner size="lg" text={message} />
       </div>
     </div>
   );

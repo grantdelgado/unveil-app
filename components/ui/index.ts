@@ -1,37 +1,52 @@
-// UI Components
-export { Button, type ButtonProps } from './Button';
-export { Input, type InputProps } from './Input';
-export {
-  LoadingSpinner,
-  LoadingPage,
-  LoadingCard,
-  type LoadingSpinnerProps,
-} from './LoadingSpinner';
-export {
-  ErrorBoundary,
-  DefaultErrorFallback,
-  CardErrorFallback,
-} from './ErrorBoundary';
+// Layout Components
+export { PageWrapper } from './PageWrapper';
+export { CardContainer } from './CardContainer';
+
+// Typography Components
 export { 
-  LazyWrapper, 
+  PageTitle, 
+  SubTitle, 
+  SectionTitle, 
+  FieldLabel, 
+  MicroCopy 
+} from './Typography';
+
+// Form Components
+export { 
+  TextInput, 
+  PhoneNumberInput, 
+  OTPInput 
+} from './UnveilInput';
+
+// Button Components
+export { 
+  PrimaryButton, 
+  SecondaryButton, 
+  IconButton 
+} from './UnveilButton';
+
+// Utility Components
+export { DevModeBox } from './DevModeBox';
+export { LogoContainer } from './LogoContainer';
+export { LoadingSpinner, LoadingPage } from './LoadingSpinner';
+
+// Legacy Components (keeping for backward compatibility)
+export { Button } from './Button';
+export { Input } from './Input';
+export { ErrorBoundary } from './ErrorBoundary';
+export { LazyWrapper } from './LazyWrapper';
+export { OptimizedImage } from './OptimizedImage';
+export { Pagination } from './Pagination';
+
+// Additional Legacy Exports (extended functionality)
+export { LoadingCard } from './LoadingSpinner';
+export { DefaultErrorFallback, CardErrorFallback } from './ErrorBoundary';
+export { 
   withLazyWrapper, 
   DashboardLoading, 
   GalleryLoading, 
   FormLoading, 
   MessagingLoading 
 } from './LazyWrapper';
-
-// Optimized images
-export {
-  OptimizedImage,
-  GalleryImage,
-  AvatarImage,
-  HeroImage,
-} from './OptimizedImage';
-
-// Pagination components
-export {
-  Pagination,
-  SimplePagination,
-  LoadMoreButton,
-} from './Pagination';
+export { GalleryImage, AvatarImage, HeroImage } from './OptimizedImage';
+export { SimplePagination, LoadMoreButton } from './Pagination';
