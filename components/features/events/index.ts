@@ -1,2 +1,2 @@
 // Event Components (shared between host and guest)
-export { WelcomeBanner } from './WelcomeBanner' 
+export { WelcomeBanner } from './WelcomeBanner';

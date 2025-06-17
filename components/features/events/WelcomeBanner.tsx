@@ -1,29 +1,29 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/Button'
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 interface WelcomeBannerProps {
-  guestCount: number
-  onImportGuests?: () => void
-  onSendFirstMessage?: () => void
+  guestCount: number;
+  onImportGuests?: () => void;
+  onSendFirstMessage?: () => void;
 }
 
-export function WelcomeBanner({ 
-  guestCount, 
+export function WelcomeBanner({
+  guestCount,
   onImportGuests,
-  onSendFirstMessage 
+  onSendFirstMessage,
 }: WelcomeBannerProps) {
-  const [isDismissed, setIsDismissed] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false);
 
   // Calculate completion status
-  const hasGuests = guestCount > 0
-  const completedSteps = [hasGuests].filter(Boolean).length
-  const totalSteps = 1
-  
+  const hasGuests = guestCount > 0;
+  const completedSteps = [hasGuests].filter(Boolean).length;
+  const totalSteps = 1;
+
   // Don't show if all steps completed or dismissed
   if (isDismissed || completedSteps === totalSteps) {
-    return null
+    return null;
   }
 
   const steps = [
@@ -34,11 +34,11 @@ export function WelcomeBanner({
       completed: hasGuests,
       action: onImportGuests,
       icon: '👥',
-      buttonText: 'Import Guests'
-    }
-  ]
+      buttonText: 'Import Guests',
+    },
+  ];
 
-  const nextStep = steps.find(step => !step.completed)
+  const nextStep = steps.find((step) => !step.completed);
 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-rose-50 border border-purple-200 rounded-2xl p-6 mb-6">
@@ -54,13 +54,17 @@ export function WelcomeBanner({
             </p>
           </div>
         </div>
-        
+
         <button
           onClick={() => setIsDismissed(true)}
           className="text-stone-400 hover:text-stone-600 transition-colors"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       </div>
@@ -72,7 +76,7 @@ export function WelcomeBanner({
           <span>{Math.round((completedSteps / totalSteps) * 100)}%</span>
         </div>
         <div className="w-full bg-white rounded-full h-2 overflow-hidden">
-          <div 
+          <div
             className="bg-gradient-to-r from-purple-500 to-rose-500 h-full transition-all duration-500"
             style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
           />
@@ -86,12 +90,14 @@ export function WelcomeBanner({
             <div className="flex items-center">
               <div className="text-2xl mr-3">{nextStep.icon}</div>
               <div>
-                <h3 className="font-semibold text-stone-800">{nextStep.title}</h3>
+                <h3 className="font-semibold text-stone-800">
+                  {nextStep.title}
+                </h3>
                 <p className="text-sm text-stone-600">{nextStep.description}</p>
               </div>
             </div>
             {nextStep.action && (
-              <Button 
+              <Button
                 onClick={nextStep.action}
                 className="bg-gradient-to-r from-purple-500 to-rose-500 hover:from-purple-600 hover:to-rose-600"
               >
@@ -113,7 +119,7 @@ export function WelcomeBanner({
             Guests can now RSVP and start sharing in your celebration
           </p>
           {onSendFirstMessage && (
-            <Button 
+            <Button
               onClick={onSendFirstMessage}
               variant="secondary"
               size="sm"
@@ -125,5 +131,5 @@ export function WelcomeBanner({
         </div>
       )}
     </div>
-  )
-} 
+  );
+}

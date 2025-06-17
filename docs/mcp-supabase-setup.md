@@ -14,11 +14,13 @@ Successfully configured the official Supabase MCP server for Cursor IDE to conne
 ### 📁 Configuration Files Created
 
 #### Global Configuration
+
 - **File**: `~/.cursor/mcp.json`
 - **Scope**: Available across all Cursor instances
 - **Purpose**: Default Supabase MCP server connection
 
-#### Project-Specific Configuration  
+#### Project-Specific Configuration
+
 - **File**: `.cursor/mcp.json`
 - **Scope**: Only for this Unveil project
 - **Purpose**: Project-specific Supabase MCP server connection
@@ -28,18 +30,21 @@ Successfully configured the official Supabase MCP server for Cursor IDE to conne
 The official Supabase MCP server provides access to:
 
 1. **Database Schema Information**
+
    - Tables, views, functions
    - Columns, constraints, indexes
    - Foreign key relationships
    - RLS policies
 
 2. **Live Database Operations**
+
    - SQL query execution
    - Schema modifications
    - Migration management
    - Data manipulation
 
 3. **Supabase Management API**
+
    - Project configuration
    - User management
    - Storage operations
@@ -76,7 +81,7 @@ The official Supabase MCP server provides access to:
 ### 🚀 Next Steps
 
 1. Restart Cursor IDE
-2. Open a chat session 
+2. Open a chat session
 3. Ask: "What is the current schema of my Supabase database?"
 4. Verify MCP is reading live schema data
 5. Start using MCP for all database-related development
@@ -84,6 +89,7 @@ The official Supabase MCP server provides access to:
 ### 🛠️ Troubleshooting
 
 If MCP doesn't work:
+
 1. Check Cursor Settings → Features → MCP Servers
 2. Verify green indicator next to "supabase-unveil"
 3. Check that the Personal Access Token is valid
@@ -93,4 +99,4 @@ If MCP doesn't work:
 
 **Status**: ✅ MCP Configuration Complete
 **Source of Truth**: Live Supabase Database (`wvhtbqvnamerdkkjknuv`)
-**Ready for Use**: Yes - restart Cursor to activate 
+**Ready for Use**: Yes - restart Cursor to activate

@@ -1,26 +1,27 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react'
-import { supabase } from '@/lib/supabase'
-import type { Database } from '@/app/reference/supabase.types'
+import { useState, useEffect, useCallback, memo } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/app/reference/supabase.types';
 
-type Message = Database['public']['Tables']['messages']['Row']
-type PublicUserProfile = Database['public']['Views']['public_user_profiles']['Row']
+type Message = Database['public']['Tables']['messages']['Row'];
+type PublicUserProfile =
+  Database['public']['Views']['public_user_profiles']['Row'];
 
 interface MessageWithSender extends Message {
-  sender: PublicUserProfile | null
+  sender: PublicUserProfile | null;
 }
 
 interface GuestMessagingProps {
-  eventId: string
-  currentUserId: string | null
+  eventId: string;
+  currentUserId: string | null;
 }
 
 function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
-  const [messages, setMessages] = useState<MessageWithSender[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
+  const [messages, setMessages] = useState<MessageWithSender[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -29,21 +30,25 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
         .from('messages')
         .select('*')
         .eq('event_id', eventId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: true });
 
       if (messagesError) {
-        console.error('❌ Error fetching messages:', messagesError)
-        setMessages([])
-        setLoading(false)
-        return
+        console.error('❌ Error fetching messages:', messagesError);
+        setMessages([]);
+        setLoading(false);
+        return;
       }
 
       // Then try to fetch sender info for each unique sender
-      const uniqueSenderIds = Array.from(new Set(
-        messagesData?.map(m => m.sender_user_id).filter((id): id is string => Boolean(id)) || []
-      ))
+      const uniqueSenderIds = Array.from(
+        new Set(
+          messagesData
+            ?.map((m) => m.sender_user_id)
+            .filter((id): id is string => Boolean(id)) || [],
+        ),
+      );
 
-      const sendersMap = new Map<string, PublicUserProfile>()
+      const sendersMap = new Map<string, PublicUserProfile>();
 
       // Fetch sender profiles separately to handle RLS gracefully
       for (const senderId of uniqueSenderIds) {
@@ -52,10 +57,10 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
             .from('public_user_profiles')
             .select('*')
             .eq('id', senderId)
-            .single()
+            .single();
 
           if (!senderError && senderData) {
-            sendersMap.set(senderId, senderData)
+            sendersMap.set(senderId, senderData);
           }
         } catch {
           // Silently handle individual sender fetch failures
@@ -63,88 +68,93 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
       }
 
       // Combine messages with sender info
-      const messagesWithSenders: MessageWithSender[] = (messagesData || []).map(message => ({
-        ...message,
-        sender: message.sender_user_id ? sendersMap.get(message.sender_user_id) || null : null
-      }))
+      const messagesWithSenders: MessageWithSender[] = (messagesData || []).map(
+        (message) => ({
+          ...message,
+          sender: message.sender_user_id
+            ? sendersMap.get(message.sender_user_id) || null
+            : null,
+        }),
+      );
 
-      setMessages(messagesWithSenders)
+      setMessages(messagesWithSenders);
     } catch (err) {
-      console.error('❌ Unexpected error fetching messages:', err)
-      setMessages([])
+      console.error('❌ Unexpected error fetching messages:', err);
+      setMessages([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [eventId])
+  }, [eventId]);
 
   useEffect(() => {
-    fetchMessages()
-  }, [fetchMessages])
+    fetchMessages();
+  }, [fetchMessages]);
 
   const sendMessage = useCallback(async () => {
-    if (!newMessage.trim() || !currentUserId || sending) return
+    if (!newMessage.trim() || !currentUserId || sending) return;
 
-    setSending(true)
+    setSending(true);
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          event_id: eventId,
-          sender_user_id: currentUserId,
-          content: newMessage.trim(),
-          message_type: 'channel'
-        })
+      const { error } = await supabase.from('messages').insert({
+        event_id: eventId,
+        sender_user_id: currentUserId,
+        content: newMessage.trim(),
+        message_type: 'channel',
+      });
 
       if (error) {
-        console.error('❌ Error sending message:', error)
-        alert('Something went wrong. Please try again.')
-        return
+        console.error('❌ Error sending message:', error);
+        alert('Something went wrong. Please try again.');
+        return;
       }
 
-      setNewMessage('')
-      await fetchMessages()
+      setNewMessage('');
+      await fetchMessages();
     } catch (err) {
-      console.error('❌ Unexpected error sending message:', err)
-      alert('Something went wrong. Please try again.')
+      console.error('❌ Unexpected error sending message:', err);
+      alert('Something went wrong. Please try again.');
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }, [newMessage, currentUserId, sending, eventId, fetchMessages])
+  }, [newMessage, currentUserId, sending, eventId, fetchMessages]);
 
   const formatMessageTime = useCallback((timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
-      })
+        hour12: true,
+      });
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
-      })
+        hour12: true,
+      });
     }
-  }, [])
+  }, []);
 
-  const getMessageTypeStyle = useCallback((type: string, isOwnMessage: boolean) => {
-    if (type === 'announcement') {
-      return 'bg-purple-50 border border-purple-200 text-purple-900'
-    }
-    
-    if (isOwnMessage) {
-      return 'bg-stone-800 text-white ml-auto'
-    }
-    
-    return 'bg-stone-100 text-stone-900'
-  }, [])
+  const getMessageTypeStyle = useCallback(
+    (type: string, isOwnMessage: boolean) => {
+      if (type === 'announcement') {
+        return 'bg-purple-50 border border-purple-200 text-purple-900';
+      }
+
+      if (isOwnMessage) {
+        return 'bg-stone-800 text-white ml-auto';
+      }
+
+      return 'bg-stone-100 text-stone-900';
+    },
+    [],
+  );
 
   if (loading) {
     return (
@@ -155,7 +165,7 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
           <span className="text-stone-600">Loading broadcasts...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -166,15 +176,17 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
       <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
         {messages.length > 0 ? (
           messages.map((message) => {
-            const isOwnMessage = message.sender_user_id === currentUserId
-            const isAnnouncement = message.message_type === 'announcement'
-            
+            const isOwnMessage = message.sender_user_id === currentUserId;
+            const isAnnouncement = message.message_type === 'announcement';
+
             return (
               <div
                 key={message.id}
                 className={`flex ${isOwnMessage && !isAnnouncement ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${getMessageTypeStyle(message.message_type || 'direct', isOwnMessage)}`}>
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${getMessageTypeStyle(message.message_type || 'direct', isOwnMessage)}`}
+                >
                   {!isOwnMessage && (
                     <div className="flex items-center mb-1">
                       <span className="text-xs font-medium text-stone-600">
@@ -183,17 +195,25 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
                     </div>
                   )}
                   <p className="text-sm leading-relaxed">{message.content}</p>
-                  <p className={`text-xs mt-2 ${isOwnMessage ? 'text-stone-300' : 'text-stone-500'}`}>
-                    {message.created_at ? formatMessageTime(message.created_at) : 'Unknown time'}
+                  <p
+                    className={`text-xs mt-2 ${isOwnMessage ? 'text-stone-300' : 'text-stone-500'}`}
+                  >
+                    {message.created_at
+                      ? formatMessageTime(message.created_at)
+                      : 'Unknown time'}
                   </p>
                 </div>
               </div>
-            )
+            );
           })
         ) : (
           <div className="text-center py-8">
-            <p className="text-stone-600 mb-1">No broadcasts yet—but they&apos;ll arrive soon.</p>
-            <p className="text-stone-500 text-sm">Hosts will share updates here.</p>
+            <p className="text-stone-600 mb-1">
+              No broadcasts yet—but they&apos;ll arrive soon.
+            </p>
+            <p className="text-stone-500 text-sm">
+              Hosts will share updates here.
+            </p>
           </div>
         )}
       </div>
@@ -223,7 +243,7 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
         </button>
       </div>
     </div>
-  )
+  );
 }
 
-export default memo(GuestMessaging)
+export default memo(GuestMessaging);

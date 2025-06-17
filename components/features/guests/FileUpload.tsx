@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import React, { useCallback } from 'react'
-import { useDropzone, type FileRejection } from 'react-dropzone'
-import { cn } from '@/lib/utils'
-import { validateImportFile } from '@/lib/guest-import'
+import React, { useCallback } from 'react';
+import { useDropzone, type FileRejection } from 'react-dropzone';
+import { cn } from '@/lib/utils';
+import { validateImportFile } from '@/lib/guest-import';
 
 interface FileUploadProps {
-  onFileSelect: (file: File) => void
-  onError: (error: string) => void
-  isLoading?: boolean
-  className?: string
+  onFileSelect: (file: File) => void;
+  onError: (error: string) => void;
+  isLoading?: boolean;
+  className?: string;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -18,38 +18,43 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   isLoading = false,
   className,
 }) => {
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-    if (rejectedFiles.length > 0) {
-      onError('Please upload a CSV or Excel file')
-      return
-    }
+  const onDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+      if (rejectedFiles.length > 0) {
+        onError('Please upload a CSV or Excel file');
+        return;
+      }
 
-    if (acceptedFiles.length === 0) {
-      onError('No file selected')
-      return
-    }
+      if (acceptedFiles.length === 0) {
+        onError('No file selected');
+        return;
+      }
 
-    const file = acceptedFiles[0]
-    const validation = validateImportFile(file)
-    
-    if (!validation.valid) {
-      onError(validation.error!)
-      return
-    }
+      const file = acceptedFiles[0];
+      const validation = validateImportFile(file);
 
-    onFileSelect(file)
-  }, [onFileSelect, onError])
+      if (!validation.valid) {
+        onError(validation.error!);
+        return;
+      }
+
+      onFileSelect(file);
+    },
+    [onFileSelect, onError],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'text/csv': ['.csv'],
       'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+        '.xlsx',
+      ],
     },
     multiple: false,
     disabled: isLoading,
-  })
+  });
 
   return (
     <div
@@ -60,11 +65,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           ? 'border-purple-400 bg-purple-50'
           : 'border-stone-300 hover:border-purple-300 hover:bg-stone-50',
         isLoading && 'opacity-50 cursor-not-allowed',
-        className
+        className,
       )}
     >
       <input {...getInputProps()} />
-      
+
       <div className="space-y-4">
         {isLoading ? (
           <>
@@ -88,10 +93,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 />
               </svg>
             </div>
-            
+
             <div>
               <p className="text-lg font-medium text-stone-800 mb-2">
-                {isDragActive ? 'Drop your file here' : 'Upload your guest list'}
+                {isDragActive
+                  ? 'Drop your file here'
+                  : 'Upload your guest list'}
               </p>
               <p className="text-stone-600 text-sm">
                 Drag & drop a CSV or Excel file, or click to browse
@@ -104,5 +111,5 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
       </div>
     </div>
-  )
-} 
+  );
+};

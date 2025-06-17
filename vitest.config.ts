@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -27,9 +27,9 @@ export default defineConfig({
         '**/tests/**',
         '**/__tests__/**',
         '**/*.test.*',
-        '**/*.spec.*'
-      ]
-    }
+        '**/*.spec.*',
+      ],
+    },
   },
   resolve: {
     alias: {
@@ -37,7 +37,7 @@ export default defineConfig({
       '@/app': resolve(__dirname, './app'),
       '@/lib': resolve(__dirname, './lib'),
       '@/components': resolve(__dirname, './components'),
-      '@/hooks': resolve(__dirname, './hooks')
-    }
-  }
-}) 
+      '@/hooks': resolve(__dirname, './hooks'),
+    },
+  },
+});

@@ -1,9 +1,10 @@
 // Application Constants
 export const APP_CONFIG = {
   name: 'Unveil',
-  description: 'Focus on presence, not logistics. Streamline wedding communication and preserve shared memories in one elegant space.',
+  description:
+    'Focus on presence, not logistics. Streamline wedding communication and preserve shared memories in one elegant space.',
   version: '0.1.0',
-} as const
+} as const;
 
 // Route Constants
 export const ROUTES = {
@@ -23,7 +24,7 @@ export const ROUTES = {
     EVENTS: '/guest/events',
     EVENT_HOME: (eventId: string) => `/guest/events/${eventId}/home`,
   },
-} as const
+} as const;
 
 // Database Constants
 export const DB_ENUMS = {
@@ -47,7 +48,7 @@ export const DB_ENUMS = {
     HOST: 'host',
     ADMIN: 'admin',
   },
-} as const
+} as const;
 
 // UI Constants
 export const UI_CONFIG = {
@@ -66,7 +67,7 @@ export const UI_CONFIG = {
     ACCEPTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
     ACCEPTED_VIDEO_TYPES: ['video/mp4', 'video/webm'],
   },
-} as const
+} as const;
 
 // Error Messages
 export const ERROR_MESSAGES = {
@@ -77,7 +78,7 @@ export const ERROR_MESSAGES = {
   VALIDATION: 'Please check your input and try again.',
   FILE_TOO_LARGE: `File size must be less than ${UI_CONFIG.FILE_UPLOAD.MAX_SIZE_MB}MB`,
   INVALID_FILE_TYPE: 'Invalid file type. Please upload an image or video.',
-} as const
+} as const;
 
 // Success Messages
 export const SUCCESS_MESSAGES = {
@@ -86,4 +87,4 @@ export const SUCCESS_MESSAGES = {
   RSVP_UPDATED: 'RSVP updated successfully',
   MESSAGE_SENT: 'Message sent successfully',
   MEDIA_UPLOADED: 'Photo uploaded successfully',
-} as const 
+} as const;

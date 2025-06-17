@@ -1,45 +1,49 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/Button'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase';
 
 interface SMSAnnouncementModalProps {
-  isOpen: boolean
-  onClose: () => void
-  eventId: string
-  guestCount: number
-  onSuccess?: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  eventId: string;
+  guestCount: number;
+  onSuccess?: () => void;
 }
 
-export function SMSAnnouncementModal({ 
-  isOpen, 
-  onClose, 
-  eventId, 
+export function SMSAnnouncementModal({
+  isOpen,
+  onClose,
+  eventId,
   guestCount,
-  onSuccess 
+  onSuccess,
 }: SMSAnnouncementModalProps) {
-  const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [targetType, setTargetType] = useState<'all' | 'attending' | 'pending'>('all')
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [targetType, setTargetType] = useState<'all' | 'attending' | 'pending'>(
+    'all',
+  );
 
   const handleSend = async () => {
     if (!message.trim()) {
-      alert('Please enter a message')
-      return
+      alert('Please enter a message');
+      return;
     }
 
     if (message.length > 1500) {
-      alert('Message is too long. Please keep it under 1500 characters.')
-      return
+      alert('Message is too long. Please keep it under 1500 characters.');
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session) {
-        throw new Error('Not authenticated')
+        throw new Error('Not authenticated');
       }
 
       // Send SMS announcement via API
@@ -47,46 +51,48 @@ export function SMSAnnouncementModal({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           eventId,
           message: message.trim(),
-          targetType // Future enhancement: filter by RSVP status
-        })
-      })
+          targetType, // Future enhancement: filter by RSVP status
+        }),
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to send announcement')
+        throw new Error(result.error || 'Failed to send announcement');
       }
 
       // Show success message
-      const successMessage = result.sent > 0 
-        ? `📱 Successfully sent announcement to ${result.sent} guests!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`
-        : '📱 No eligible guests found for SMS. Make sure guests have phone numbers and haven&apos;t opted out.'
+      const successMessage =
+        result.sent > 0
+          ? `📱 Successfully sent announcement to ${result.sent} guests!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`
+          : '📱 No eligible guests found for SMS. Make sure guests have phone numbers and haven&apos;t opted out.';
 
-      alert(successMessage)
-      
+      alert(successMessage);
+
       // Reset form and close modal
-      setMessage('')
-      onClose()
-      onSuccess?.()
-      
+      setMessage('');
+      onClose();
+      onSuccess?.();
     } catch (error) {
-      console.error('Error sending announcement:', error)
-      alert(`Failed to send announcement: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Error sending announcement:', error);
+      alert(
+        `Failed to send announcement: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
-  const charCount = message.length
-  const charLimit = 1500
-  const isNearLimit = charCount > charLimit * 0.8
+  const charCount = message.length;
+  const charLimit = 1500;
+  const isNearLimit = charCount > charLimit * 0.8;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -119,18 +125,31 @@ export function SMSAnnouncementModal({
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: 'all', label: 'All Guests', desc: `${guestCount} guests` },
-                { value: 'attending', label: 'Attending', desc: 'Only confirmed' },
-                { value: 'pending', label: 'Pending', desc: 'No RSVP yet' }
+                {
+                  value: 'all',
+                  label: 'All Guests',
+                  desc: `${guestCount} guests`,
+                },
+                {
+                  value: 'attending',
+                  label: 'Attending',
+                  desc: 'Only confirmed',
+                },
+                { value: 'pending', label: 'Pending', desc: 'No RSVP yet' },
               ].map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setTargetType(option.value as 'all' | 'attending' | 'pending')}
+                  onClick={() =>
+                    setTargetType(
+                      option.value as 'all' | 'attending' | 'pending',
+                    )
+                  }
                   className={`
                     p-3 text-left border rounded-lg transition-colors
-                    ${targetType === option.value 
-                      ? 'border-purple-200 bg-purple-50 text-purple-800' 
-                      : 'border-stone-200 hover:border-stone-300 text-stone-600'
+                    ${
+                      targetType === option.value
+                        ? 'border-purple-200 bg-purple-50 text-purple-800'
+                        : 'border-stone-200 hover:border-stone-300 text-stone-600'
                     }
                   `}
                 >
@@ -149,7 +168,7 @@ export function SMSAnnouncementModal({
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Write your announcement here... e.g., 'Exciting news! We&apos;ve added a photo booth to the reception. Can&apos;t wait to see you all there! 📸'"
+              placeholder="Write your announcement here... e.g., 'Exciting news! We've added a photo booth to the reception. Can't wait to see you all there! 📸'"
               className="w-full h-32 px-3 py-2 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-sm"
               disabled={isLoading}
               maxLength={charLimit}
@@ -158,7 +177,9 @@ export function SMSAnnouncementModal({
               <div className="text-xs text-stone-500">
                 Messages are personalized with guest names
               </div>
-              <div className={`text-xs font-medium ${isNearLimit ? 'text-amber-600' : 'text-stone-500'}`}>
+              <div
+                className={`text-xs font-medium ${isNearLimit ? 'text-amber-600' : 'text-stone-500'}`}
+              >
                 {charCount}/{charLimit}
               </div>
             </div>
@@ -167,12 +188,16 @@ export function SMSAnnouncementModal({
           {/* Preview */}
           {message.trim() && (
             <div className="bg-stone-50 rounded-lg p-4">
-              <div className="text-xs font-medium text-stone-600 mb-2">Preview:</div>
+              <div className="text-xs font-medium text-stone-600 mb-2">
+                Preview:
+              </div>
               <div className="text-sm text-stone-700 bg-white p-3 rounded border">
                 Hi [Guest Name]! [Your Name] here with an update about [Event]:
-                <br /><br />
+                <br />
+                <br />
                 {message.trim()}
-                <br /><br />
+                <br />
+                <br />
                 Reply STOP to opt out.
               </div>
             </div>
@@ -184,7 +209,11 @@ export function SMSAnnouncementModal({
               <div className="text-amber-500 text-sm">⚠️</div>
               <div className="text-xs text-amber-700">
                 <div className="font-medium mb-1">SMS charges may apply</div>
-                <div>This will send individual SMS messages to each guest with a phone number. Make sure your Twilio account has sufficient credits.</div>
+                <div>
+                  This will send individual SMS messages to each guest with a
+                  phone number. Make sure your Twilio account has sufficient
+                  credits.
+                </div>
               </div>
             </div>
           </div>
@@ -192,11 +221,7 @@ export function SMSAnnouncementModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-stone-200 flex justify-end space-x-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button
@@ -219,5 +244,5 @@ export function SMSAnnouncementModal({
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

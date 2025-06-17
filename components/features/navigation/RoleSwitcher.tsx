@@ -1,51 +1,56 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface RoleSwitcherProps {
-  currentEventId: string
-  currentRole: 'host' | 'guest'
+  currentEventId: string;
+  currentRole: 'host' | 'guest';
 }
 
-export function RoleSwitcher({ currentEventId, currentRole }: RoleSwitcherProps) {
-  const router = useRouter()
-  const [availableRoles, setAvailableRoles] = useState<string[]>([])
+export function RoleSwitcher({
+  currentEventId,
+  currentRole,
+}: RoleSwitcherProps) {
+  const router = useRouter();
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchUserRoles() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
 
         // Get user's roles for this event
         const { data: participantData } = await supabase
           .from('event_participants')
           .select('role')
           .eq('event_id', currentEventId)
-          .eq('user_id', user.id)
+          .eq('user_id', user.id);
 
-        const roles = participantData?.map(p => p.role) || []
-        setAvailableRoles(roles)
+        const roles = participantData?.map((p) => p.role) || [];
+        setAvailableRoles(roles);
       } catch (error) {
-        console.error('Error fetching user roles:', error)
+        console.error('Error fetching user roles:', error);
       }
     }
 
-    fetchUserRoles()
-  }, [currentEventId])
+    fetchUserRoles();
+  }, [currentEventId]);
 
   const handleRoleSwitch = (newRole: 'host' | 'guest') => {
-    if (newRole === currentRole) return
-    
-    const basePath = newRole === 'host' ? '/host' : '/guest'
-    router.push(`${basePath}/events/${currentEventId}`)
-  }
+    if (newRole === currentRole) return;
+
+    const basePath = newRole === 'host' ? '/host' : '/guest';
+    router.push(`${basePath}/events/${currentEventId}`);
+  };
 
   // Don't show switcher if user only has one role
   if (availableRoles.length <= 1) {
-    return null
+    return null;
   }
 
   return (
@@ -75,5 +80,5 @@ export function RoleSwitcher({ currentEventId, currentRole }: RoleSwitcherProps)
         </button>
       )}
     </div>
-  )
-} 
+  );
+}

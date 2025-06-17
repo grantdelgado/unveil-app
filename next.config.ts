@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
@@ -36,33 +36,33 @@ const nextConfig: NextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'none'",
-              "upgrade-insecure-requests"
-            ].join('; ')
+              'upgrade-insecure-requests',
+            ].join('; '),
           },
           // Security headers
           {
             key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+            value: 'on',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload'
+            value: 'max-age=31536000; includeSubDomains; preload',
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY'
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
             key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            value: '1; mode=block',
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            value: 'strict-origin-when-cross-origin',
           },
           {
             key: 'Permissions-Policy',
@@ -70,9 +70,9 @@ const nextConfig: NextConfig = {
               'camera=(),',
               'microphone=(),',
               'geolocation=(),',
-              'interest-cohort=()'
-            ].join(' ')
-          }
+              'interest-cohort=()',
+            ].join(' '),
+          },
         ],
       },
       {
@@ -81,15 +81,15 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Robots-Tag',
-            value: 'noindex'
+            value: 'noindex',
           },
           {
             key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, proxy-revalidate'
-          }
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
         ],
-      }
-    ]
+      },
+    ];
   },
 };
 

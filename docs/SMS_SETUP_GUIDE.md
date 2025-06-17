@@ -1,16 +1,19 @@
 # SMS Integration Setup Guide
 
 ## Overview
+
 This guide walks you through setting up SMS integration for Unveil using Twilio. The SMS system is already built into the app - you just need to configure your Twilio account and environment variables.
 
 ## 🚀 Quick Start
 
 ### 1. Twilio Account Setup
+
 1. Create a Twilio account at [twilio.com](https://twilio.com)
 2. Get your Account SID and Auth Token from the console
 3. Purchase a phone number OR set up a Messaging Service (recommended)
 
 ### 2. Environment Variables
+
 Add these to your `.env.local` file:
 
 ```bash
@@ -29,6 +32,7 @@ CRON_SECRET=your_random_secret_here
 ```
 
 ### 3. Webhook Configuration
+
 In your Twilio console, set up webhooks for delivery status updates:
 
 **Webhook URL**: `https://your-domain.com/api/webhooks/twilio`
@@ -38,6 +42,7 @@ In your Twilio console, set up webhooks for delivery status updates:
 ## 📋 Features Already Implemented
 
 ### ✅ Core SMS Functionality
+
 - **Twilio Integration**: Full SMS sending with delivery tracking
 - **Message Scheduling**: Send now or schedule for later
 - **Bulk Messaging**: Send to multiple guests simultaneously
@@ -45,17 +50,20 @@ In your Twilio console, set up webhooks for delivery status updates:
 - **Opt-out Support**: Respects guest SMS preferences
 
 ### ✅ Advanced Targeting
+
 - **All Guests**: Broadcast to entire guest list
 - **Sub-Event Targeting**: Send to specific events (rehearsal, ceremony, etc.)
 - **Tag-based Targeting**: Send to guests with specific tags
 - **Individual Targeting**: Send to specific guests
 
 ### ✅ Message Personalization
+
 - **Guest Names**: Use `{name}` or `{first_name}` in messages
 - **Character Counting**: SMS-optimized message length validation
 - **Multiple Channels**: SMS, Push, and Email support
 
 ### ✅ Analytics & Monitoring
+
 - **Delivery Status**: Track sent, delivered, failed messages
 - **Error Handling**: Comprehensive error logging and recovery
 - **Rate Limiting**: Respects Twilio rate limits
@@ -64,6 +72,7 @@ In your Twilio console, set up webhooks for delivery status updates:
 ## 🔧 How It Works
 
 ### Message Flow
+
 1. **Compose**: Host creates message in MessageComposer
 2. **Schedule**: Message saved to `scheduled_messages` table
 3. **Process**: Cron job (every minute) checks for ready messages
@@ -71,6 +80,7 @@ In your Twilio console, set up webhooks for delivery status updates:
 5. **Track**: Delivery status updated via webhooks
 
 ### Database Tables
+
 - `scheduled_messages`: Stores message content and targeting
 - `message_deliveries`: Tracks individual message delivery
 - `event_guests`: Guest phone numbers and preferences
@@ -78,12 +88,14 @@ In your Twilio console, set up webhooks for delivery status updates:
 ## 🧪 Testing
 
 ### 1. Test Message Processing
+
 ```bash
 # Manually trigger message processing
 curl -X POST http://localhost:3000/api/messages/process-scheduled
 ```
 
 ### 2. Test Webhook
+
 ```bash
 # Test Twilio webhook (replace with your domain)
 curl -X POST https://your-domain.com/api/webhooks/twilio \
@@ -91,21 +103,26 @@ curl -X POST https://your-domain.com/api/webhooks/twilio \
 ```
 
 ### 3. Test Announcement
+
 Use the SMS Announcement feature in the host dashboard to send a test message.
 
 ## 🛠 Production Deployment
 
 ### 1. Vercel Configuration
+
 The app includes `vercel.json` with cron job configuration:
+
 - Runs every minute to process scheduled messages
 - Secure with `CRON_SECRET` environment variable
 
 ### 2. Twilio Configuration
+
 - Use Messaging Service for better deliverability
 - Set up webhooks for delivery tracking
 - Configure phone number pools for high volume
 
 ### 3. Monitoring
+
 - Check Vercel function logs for message processing
 - Monitor Twilio console for delivery rates
 - Use Supabase dashboard to track message status
@@ -113,12 +130,15 @@ The app includes `vercel.json` with cron job configuration:
 ## 🔐 Security
 
 ### Environment Variables
+
 Never commit sensitive data:
+
 - Twilio credentials
 - Cron secrets
 - Database keys
 
 ### Webhook Security
+
 - Validate Twilio webhook signatures (future enhancement)
 - Use HTTPS for all webhook endpoints
 - Implement rate limiting on endpoints
@@ -126,13 +146,16 @@ Never commit sensitive data:
 ## 🐛 Troubleshooting
 
 ### Common Issues
+
 1. **Messages not sending**: Check Twilio credentials and phone number
 2. **Webhook not updating**: Verify webhook URL in Twilio console
 3. **Cron not running**: Check Vercel function logs
 4. **Rate limits**: Implement delays between messages
 
 ### Debug Logs
+
 Check these locations for debugging:
+
 - Vercel function logs
 - Twilio console logs
 - Supabase database logs
@@ -141,6 +164,7 @@ Check these locations for debugging:
 ## 📈 Usage Metrics
 
 The system tracks:
+
 - Messages sent/failed
 - Delivery rates by channel
 - Guest response rates
@@ -149,6 +173,7 @@ The system tracks:
 ## 🚀 Next Steps
 
 Once SMS is working:
+
 1. **Push Notifications**: Add Firebase for app users
 2. **Email Integration**: Add SendGrid/Mailgun support
 3. **Two-way Messaging**: Handle guest replies
@@ -166,6 +191,7 @@ Once SMS is working:
 ---
 
 **Need help?** Check the troubleshooting section or review the code in:
+
 - `/lib/sms.ts` - Core SMS functionality
 - `/app/api/messages/process-scheduled/route.ts` - Message processing
-- `/components/features/events/MessageComposer.tsx` - UI component 
+- `/components/features/events/MessageComposer.tsx` - UI component

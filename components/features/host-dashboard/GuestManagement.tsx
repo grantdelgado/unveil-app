@@ -1,126 +1,137 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { Database } from '@/app/reference/supabase.types'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import type { Database } from '@/app/reference/supabase.types';
 
 type Participant = Database['public']['Tables']['event_participants']['Row'] & {
-  user: Database['public']['Views']['public_user_profiles']['Row']
-}
+  user: Database['public']['Views']['public_user_profiles']['Row'];
+};
 
 interface GuestManagementProps {
-  eventId: string
-  onGuestUpdated?: () => void
+  eventId: string;
+  onGuestUpdated?: () => void;
 }
 
-export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProps) {
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set())
-  
+export function GuestManagement({
+  eventId,
+  onGuestUpdated,
+}: GuestManagementProps) {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(
+    new Set(),
+  );
+
   // Filters
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterByRSVP, setFilterByRSVP] = useState('all')
-  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterByRSVP, setFilterByRSVP] = useState('all');
+
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const { data: participantData, error: participantError } = await supabase
         .from('event_participants')
-        .select(`
+        .select(
+          `
           *,
           user:public_user_profiles(*)
-        `)
-        .eq('event_id', eventId)
+        `,
+        )
+        .eq('event_id', eventId);
 
-      if (participantError) throw participantError
+      if (participantError) throw participantError;
 
-      setParticipants(participantData || [])
+      setParticipants(participantData || []);
     } catch (error) {
-      console.error('Error fetching participants:', error)
+      console.error('Error fetching participants:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [eventId])
+  }, [eventId]);
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
 
   const handleRSVPUpdate = async (participantId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('event_participants')
         .update({ rsvp_status: newStatus })
-        .eq('id', participantId)
+        .eq('id', participantId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      await fetchData()
-      onGuestUpdated?.()
+      await fetchData();
+      onGuestUpdated?.();
     } catch (error) {
-      console.error('Error updating RSVP:', error)
+      console.error('Error updating RSVP:', error);
     }
-  }
+  };
 
   const handleRemoveParticipant = async (participantId: string) => {
-    if (!confirm('Are you sure you want to remove this participant?')) return
+    if (!confirm('Are you sure you want to remove this participant?')) return;
 
     try {
       const { error } = await supabase
         .from('event_participants')
         .delete()
-        .eq('id', participantId)
+        .eq('id', participantId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      await fetchData()
-      onGuestUpdated?.()
+      await fetchData();
+      onGuestUpdated?.();
     } catch (error) {
-      console.error('Error removing participant:', error)
+      console.error('Error removing participant:', error);
     }
-  }
+  };
 
   const handleSelectAll = () => {
     if (selectedParticipants.size === filteredParticipants.length) {
-      setSelectedParticipants(new Set())
+      setSelectedParticipants(new Set());
     } else {
-      setSelectedParticipants(new Set(filteredParticipants.map(p => p.id)))
+      setSelectedParticipants(new Set(filteredParticipants.map((p) => p.id)));
     }
-  }
+  };
 
   const handleBulkRSVPUpdate = async (newStatus: string) => {
-    if (selectedParticipants.size === 0) return
+    if (selectedParticipants.size === 0) return;
 
     try {
-      const operations = Array.from(selectedParticipants).map(participantId =>
+      const operations = Array.from(selectedParticipants).map((participantId) =>
         supabase
           .from('event_participants')
           .update({ rsvp_status: newStatus })
-          .eq('id', participantId)
-      )
+          .eq('id', participantId),
+      );
 
-      await Promise.all(operations)
-      await fetchData()
-      setSelectedParticipants(new Set())
-      onGuestUpdated?.()
+      await Promise.all(operations);
+      await fetchData();
+      setSelectedParticipants(new Set());
+      onGuestUpdated?.();
     } catch (error) {
-      console.error('Error updating RSVPs:', error)
+      console.error('Error updating RSVPs:', error);
     }
-  }
+  };
 
   // Apply filters
-  const filteredParticipants = participants.filter(participant => {
-    const matchesSearch = !searchTerm || 
-      participant.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      participant.user?.id?.includes(searchTerm) // Search by phone (stored in users table)
-    
-    const matchesRSVP = filterByRSVP === 'all' || participant.rsvp_status === filterByRSVP
-    
-    return matchesSearch && matchesRSVP
-  })
+  const filteredParticipants = participants.filter((participant) => {
+    const matchesSearch =
+      !searchTerm ||
+      participant.user?.full_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      participant.user?.id?.includes(searchTerm); // Search by phone (stored in users table)
+
+    const matchesRSVP =
+      filterByRSVP === 'all' || participant.rsvp_status === filterByRSVP;
+
+    return matchesSearch && matchesRSVP;
+  });
 
   if (loading) {
     return (
@@ -129,7 +140,7 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
           <LoadingSpinner />
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -171,12 +182,14 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
         </div>
 
         <div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleSelectAll}
             className="w-full"
           >
-            {selectedParticipants.size === filteredParticipants.length ? 'Deselect All' : 'Select All'}
+            {selectedParticipants.size === filteredParticipants.length
+              ? 'Deselect All'
+              : 'Select All'}
           </Button>
         </div>
       </div>
@@ -185,32 +198,33 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
       {selectedParticipants.size > 0 && (
         <div className="bg-purple-50 border-b border-purple-200 p-4">
           <p className="text-sm text-purple-700 mb-3">
-            {selectedParticipants.size} participant{selectedParticipants.size > 1 ? 's' : ''} selected
+            {selectedParticipants.size} participant
+            {selectedParticipants.size > 1 ? 's' : ''} selected
           </p>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleBulkRSVPUpdate('attending')}
               className="bg-green-600 hover:bg-green-700"
             >
               Mark Attending
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleBulkRSVPUpdate('declined')}
               className="bg-red-600 hover:bg-red-700"
             >
               Mark Declined
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleBulkRSVPUpdate('maybe')}
               className="bg-yellow-600 hover:bg-yellow-700"
             >
               Mark Maybe
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleBulkRSVPUpdate('pending')}
               variant="outline"
             >
@@ -224,30 +238,33 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
       <div className="max-h-96 overflow-y-auto">
         {filteredParticipants.length === 0 ? (
           <div className="p-6 text-center text-stone-500">
-            {searchTerm || filterByRSVP !== 'all' 
-              ? 'No participants match your filters' 
+            {searchTerm || filterByRSVP !== 'all'
+              ? 'No participants match your filters'
               : 'No participants yet'}
           </div>
         ) : (
           <div className="divide-y divide-stone-100">
             {filteredParticipants.map((participant) => (
-              <div key={participant.id} className="p-4 flex items-center justify-between hover:bg-stone-50">
+              <div
+                key={participant.id}
+                className="p-4 flex items-center justify-between hover:bg-stone-50"
+              >
                 <div className="flex items-center">
                   <input
                     type="checkbox"
                     checked={selectedParticipants.has(participant.id)}
                     onChange={(e) => {
-                      const newSelected = new Set(selectedParticipants)
+                      const newSelected = new Set(selectedParticipants);
                       if (e.target.checked) {
-                        newSelected.add(participant.id)
+                        newSelected.add(participant.id);
                       } else {
-                        newSelected.delete(participant.id)
+                        newSelected.delete(participant.id);
                       }
-                      setSelectedParticipants(newSelected)
+                      setSelectedParticipants(newSelected);
                     }}
                     className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-stone-300 rounded"
                   />
-                  
+
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-stone-900">
                       {participant.user?.full_name || 'Unnamed Participant'}
@@ -261,7 +278,9 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
                 <div className="flex items-center space-x-2">
                   <select
                     value={participant.rsvp_status || 'pending'}
-                    onChange={(e) => handleRSVPUpdate(participant.id, e.target.value)}
+                    onChange={(e) =>
+                      handleRSVPUpdate(participant.id, e.target.value)
+                    }
                     className="text-xs px-2 py-1 border border-stone-300 rounded focus:ring-1 focus:ring-purple-500"
                   >
                     <option value="attending">Attending</option>
@@ -285,5 +304,5 @@ export function GuestManagement({ eventId, onGuestUpdated }: GuestManagementProp
         )}
       </div>
     </div>
-  )
-} 
+  );
+}

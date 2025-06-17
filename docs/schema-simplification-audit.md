@@ -12,6 +12,7 @@
 6. **Unused Features**: Sub-events, communication preferences may be premature
 
 ### **✅ What Works Well**
+
 - Phone-first authentication concept
 - Per-event role assignment
 - Basic RLS structure
@@ -33,11 +34,11 @@ CREATE TABLE public.users (
   email TEXT, -- Optional for notifications only
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   CONSTRAINT phone_format CHECK (phone ~ '^\+[1-9]\d{1,14}$')
 );
 
--- 2. EVENTS (Simplified) 
+-- 2. EVENTS (Simplified)
 CREATE TABLE public.events (
   id UUID DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
   title TEXT NOT NULL,
@@ -61,7 +62,7 @@ CREATE TABLE public.event_participants (
   notes TEXT,
   invited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   UNIQUE(event_id, user_id)
 );
 
@@ -88,6 +89,7 @@ CREATE TABLE public.messages (
 ```
 
 ### **🗑️ Tables to REMOVE**
+
 - `communication_preferences` (premature optimization)
 - `guest_sub_event_assignments` (over-engineering)
 - `message_deliveries` (complex messaging overkill)
@@ -95,6 +97,7 @@ CREATE TABLE public.messages (
 - `sub_events` (feature creep for MVP)
 
 ### **📊 Complexity Reduction**
+
 - **From 11 tables → 5 tables** (55% reduction)
 - **From 50+ columns → 30 columns** (40% reduction)
 - **From 8 RLS functions → 3 RLS functions** (62% reduction)
@@ -111,7 +114,7 @@ BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.events e
     LEFT JOIN public.event_participants ep ON ep.event_id = e.id
-    WHERE e.id = p_event_id 
+    WHERE e.id = p_event_id
     AND (e.host_user_id = auth.uid() OR ep.user_id = auth.uid())
   );
 END;
@@ -124,7 +127,7 @@ BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.events e
     LEFT JOIN public.event_participants ep ON ep.event_id = e.id AND ep.user_id = auth.uid()
-    WHERE e.id = p_event_id 
+    WHERE e.id = p_event_id
     AND (e.host_user_id = auth.uid() OR ep.role = 'host')
   );
 END;
@@ -143,12 +146,12 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     e.id,
     e.title,
     e.event_date,
     e.location,
-    CASE 
+    CASE
       WHEN e.host_user_id = auth.uid() THEN 'host'::TEXT
       ELSE COALESCE(ep.role, 'guest'::TEXT)
     END,
@@ -167,39 +170,42 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 ## 📱 **SIMPLIFIED AUTHENTICATION FLOW**
 
 ### **Phase 1: Phone-Only Login**
+
 ```typescript
 // Simplified login - ONLY phone number
 const loginFlow = {
-  step1: "Enter phone number",
-  step2: "SMS OTP sent automatically", 
-  step3: "Verify OTP",
-  step4: "Redirect to /select-event",
-  step5: "Choose event → role-based routing"
-}
+  step1: 'Enter phone number',
+  step2: 'SMS OTP sent automatically',
+  step3: 'Verify OTP',
+  step4: 'Redirect to /select-event',
+  step5: 'Choose event → role-based routing',
+};
 ```
 
 ### **Phase 2: Development Bypass**
+
 ```typescript
 // Simple dev phone patterns
 const DEV_PHONES = {
   '+15550000001': { name: 'Test Host', role: 'host' },
   '+15550000002': { name: 'Test Guest', role: 'guest' },
-  '+15550000003': { name: 'Test Admin', role: 'admin' }
-}
+  '+15550000003': { name: 'Test Admin', role: 'admin' },
+};
 
 // In dev mode: Skip SMS, auto-verify these numbers
-const isDevelopment = process.env.NODE_ENV === 'development'
-const isDevPhone = phone => phone.startsWith('+1555000000')
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevPhone = (phone) => phone.startsWith('+1555000000');
 ```
 
 ### **Phase 3: Clean Session Management**
+
 ```typescript
 // Simplified auth watcher
 const authFlow = {
-  unauthenticated: "→ /login",
-  authenticated_no_event: "→ /select-event", 
-  authenticated_with_event: "→ /host/[id] or /guest/[id]"
-}
+  unauthenticated: '→ /login',
+  authenticated_no_event: '→ /select-event',
+  authenticated_with_event: '→ /host/[id] or /guest/[id]',
+};
 ```
 
 ---
@@ -207,6 +213,7 @@ const authFlow = {
 ## 🛠️ **SIMPLIFIED DEVELOPER EXPERIENCE**
 
 ### **Easy Test User Creation**
+
 ```bash
 # Simple commands
 npm run create-test-users      # Creates basic test scenario
@@ -216,6 +223,7 @@ npm run cleanup-test-data     # Clean slate
 ```
 
 ### **Environment-Based Config**
+
 ```env
 # .env.local
 NODE_ENV=development
@@ -224,6 +232,7 @@ AUTO_VERIFY_DEV_PHONES=true
 ```
 
 ### **One-Command Setup**
+
 ```bash
 npm run dev-setup  # Creates test event + users automatically
 ```
@@ -233,23 +242,27 @@ npm run dev-setup  # Creates test event + users automatically
 ## 🚀 **MIGRATION PLAN**
 
 ### **Step 1: Schema Migration**
+
 1. Create new simplified tables
 2. Migrate essential data only
 3. Drop complex tables
 4. Update RLS policies
 
 ### **Step 2: Auth Simplification** ✅ COMPLETED
+
 1. ✅ Update login flow to phone-only
 2. ✅ Implement dev phone bypass
 3. ✅ Simplify session management
 
 ### **Step 3: Application Code Refactor** ✅ COMPLETED
+
 1. ✅ Update components to use `event_participants` instead of `event_guests`
-2. ✅ Refactor components using complex tables (`MessageComposer`, `GuestManagement`, etc.)  
+2. ✅ Refactor components using complex tables (`MessageComposer`, `GuestManagement`, etc.)
 3. ✅ Update API routes to use simplified schema
 4. ✅ Remove references to `sub_events`, `scheduled_messages`, `communication_preferences`
 
 #### **Components Refactored:**
+
 - `MessageComposer.tsx` - Simplified to use basic messaging with `messages_new` and `event_participants`
 - `GuestManagement.tsx` - Updated to use `event_participants` with simplified participant management
 - `EventAnalytics.tsx` - Removed sub-events analytics, focus on basic event metrics
@@ -260,15 +273,18 @@ npm run dev-setup  # Creates test event + users automatically
 - `BottomNavigation.tsx` - Simplified navigation with new schema
 - `QuickActions.tsx` - Updated to use simplified metrics and removed complex functionality
 - `Dashboard page` - Removed sub-events tab, updated to use simplified components
+
 4. Update event selection page
 
 ### **Step 3: Dev Experience**
+
 1. Create simplified test user scripts
 2. Add one-command dev setup
 3. Implement auto-login for development
 4. Add cleanup utilities
 
 ### **Step 4: Code Cleanup**
+
 1. Remove unused components
 2. Simplify API routes
 3. Update type definitions
@@ -279,6 +295,7 @@ npm run dev-setup  # Creates test event + users automatically
 ## 📈 **BENEFITS SUMMARY**
 
 ### **Complexity Reduction**
+
 - ✅ 55% fewer database tables
 - ✅ 40% fewer columns to manage
 - ✅ 62% fewer RLS functions
@@ -286,13 +303,15 @@ npm run dev-setup  # Creates test event + users automatically
 - ✅ Simplified test data creation
 
 ### **Developer Velocity**
+
 - ✅ Faster local development setup
 - ✅ Easier debugging with simplified schema
-- ✅ No SMS dependency in development  
+- ✅ No SMS dependency in development
 - ✅ One-command test scenarios
 - ✅ Cleaner codebase maintenance
 
 ### **Production Readiness**
+
 - ✅ Secure phone-first authentication
 - ✅ Proper RLS at database layer
 - ✅ Scalable architecture foundation
@@ -304,14 +323,17 @@ npm run dev-setup  # Creates test event + users automatically
 ## ⚠️ **MIGRATION RISKS & MITIGATION**
 
 ### **Data Loss Risk**
+
 - 🔴 **Risk**: Complex messaging data loss
 - 🟢 **Mitigation**: Export important messages before migration
 
-### **Feature Regression Risk**  
+### **Feature Regression Risk**
+
 - 🔴 **Risk**: Sub-events, scheduled messages removed
 - 🟢 **Mitigation**: Document removed features for future implementation
 
 ### **Authentication Risk**
+
 - 🔴 **Risk**: Existing sessions may break
 - 🟢 **Mitigation**: Plan maintenance window, notify users
 
@@ -320,8 +342,9 @@ npm run dev-setup  # Creates test event + users automatically
 ## 📋 **IMPLEMENTATION PROGRESS TRACKING**
 
 ### **✅ STEP 1: CREATE MISSING BASE SCHEMA MIGRATION** (COMPLETED)
+
 - [x] ✅ Created `20250101000000_initial_schema.sql` with core tables
-- [x] ✅ Fixed migration dependency chain  
+- [x] ✅ Fixed migration dependency chain
 - [x] ✅ Resolved function drop dependencies with CASCADE
 - [x] ✅ Verified complete migration flow works (`supabase db reset` passes)
 - [x] ✅ Generated updated TypeScript types
@@ -331,8 +354,9 @@ npm run dev-setup  # Creates test event + users automatically
 **Result:** Database foundation ready for simplification
 
 ### **✅ STEP 2: ACTIVATE SIMPLIFIED AUTHENTICATION FLOW** (COMPLETED)
+
 - [x] ✅ Replace login page with phone-first simplified version
-- [x] ✅ Replace event selection page with simplified version  
+- [x] ✅ Replace event selection page with simplified version
 - [x] ✅ Update AuthSessionWatcher for new flow (`users_new` table)
 - [x] ✅ Test complete authentication journey
 - [x] ✅ Verify dev phone bypass works (3 test users created)
@@ -341,6 +365,7 @@ npm run dev-setup  # Creates test event + users automatically
 **Result:** ✅ Users can now login with simplified phone-first flow and use dev phone bypass
 
 ### **✅ STEP 3: REFACTOR APPLICATION CODE** (COMPLETED)
+
 - [x] ✅ Update components to use `event_participants` instead of `event_guests`
 - [x] ✅ Refactor components using complex tables (`MessageComposer`, `GuestManagement`, etc.)
 - [x] ✅ Update API routes to use simplified schema
@@ -349,6 +374,7 @@ npm run dev-setup  # Creates test event + users automatically
 **Result:** ✅ All application components successfully refactored to use simplified schema
 
 ### **✅ STEP 4: CLEANUP & FINALIZATION** (COMPLETED)
+
 - [x] ✅ Removed obsolete API routes (`process-scheduled/route.ts`)
 - [x] ✅ Cleaned up old migration files (enhance_messaging_system, fix_user_profile_access, etc.)
 - [x] ✅ Removed complex test data scripts (`comprehensive-test-data.sql`, `enhanced-seed-test-data.ts`)
@@ -362,4 +388,4 @@ npm run dev-setup  # Creates test event + users automatically
 
 ---
 
-*This audit provides a clear path to reduce technical debt while maintaining core functionality and improving developer experience.* 
+_This audit provides a clear path to reduce technical debt while maintaining core functionality and improving developer experience._

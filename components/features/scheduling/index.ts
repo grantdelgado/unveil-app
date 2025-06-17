@@ -1,2 +1,2 @@
 // Scheduling Components
-export { default as EventSchedule } from './EventSchedule' 
+export { default as EventSchedule } from './EventSchedule';

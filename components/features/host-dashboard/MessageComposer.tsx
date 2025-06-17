@@ -1,33 +1,40 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { Database } from '@/app/reference/supabase.types'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import type { Database } from '@/app/reference/supabase.types';
 
 type Participant = Database['public']['Tables']['event_participants']['Row'] & {
-  user: Database['public']['Views']['public_user_profiles']['Row']
-}
+  user: Database['public']['Views']['public_user_profiles']['Row'];
+};
 
 interface MessageComposerProps {
-  eventId: string
-  onMessageSent?: () => void
+  eventId: string;
+  onMessageSent?: () => void;
 }
 
 interface MessagePreview {
-  recipientCount: number
-  recipients: string[]
+  recipientCount: number;
+  recipients: string[];
 }
 
-export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps) {
-  const [message, setMessage] = useState('')
-  const [messageType, setMessageType] = useState<'announcement' | 'direct'>('announcement')
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([])
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [loading, setLoading] = useState(false)
-  const [preview, setPreview] = useState<MessagePreview | null>(null)
-  const [error, setError] = useState<string | null>(null)
+export function MessageComposer({
+  eventId,
+  onMessageSent,
+}: MessageComposerProps) {
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'announcement' | 'direct'>(
+    'announcement',
+  );
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
+    [],
+  );
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<MessagePreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch participants
   useEffect(() => {
@@ -35,100 +42,108 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
       try {
         const { data, error } = await supabase
           .from('event_participants')
-          .select(`
+          .select(
+            `
             *,
             user:public_user_profiles(*)
-          `)
-          .eq('event_id', eventId)
+          `,
+          )
+          .eq('event_id', eventId);
 
-        if (error) throw error
-        setParticipants(data || [])
+        if (error) throw error;
+        setParticipants(data || []);
       } catch (err) {
-        console.error('Error fetching participants:', err)
-        setError('Failed to load participants')
+        console.error('Error fetching participants:', err);
+        setError('Failed to load participants');
       }
     }
 
-    fetchParticipants()
-  }, [eventId])
+    fetchParticipants();
+  }, [eventId]);
 
   // Update preview when selections change
   useEffect(() => {
-    let recipientCount = 0
-    let recipients: string[] = []
+    let recipientCount = 0;
+    let recipients: string[] = [];
 
     if (messageType === 'announcement') {
-      recipientCount = participants.length
-      recipients = participants.map(p => p.user?.full_name || 'Unknown').slice(0, 5)
+      recipientCount = participants.length;
+      recipients = participants
+        .map((p) => p.user?.full_name || 'Unknown')
+        .slice(0, 5);
     } else {
-      const selectedParticipantData = participants.filter(p => selectedParticipants.includes(p.id))
-      recipientCount = selectedParticipantData.length
-      recipients = selectedParticipantData.map(p => p.user?.full_name || 'Unknown').slice(0, 5)
+      const selectedParticipantData = participants.filter((p) =>
+        selectedParticipants.includes(p.id),
+      );
+      recipientCount = selectedParticipantData.length;
+      recipients = selectedParticipantData
+        .map((p) => p.user?.full_name || 'Unknown')
+        .slice(0, 5);
     }
 
-    setPreview({ recipientCount, recipients })
-  }, [messageType, selectedParticipants, participants])
+    setPreview({ recipientCount, recipients });
+  }, [messageType, selectedParticipants, participants]);
 
   const handleSendMessage = useCallback(async () => {
     if (!message.trim()) {
-      setError('Please enter a message')
-      return
+      setError('Please enter a message');
+      return;
     }
 
     if (messageType === 'direct' && selectedParticipants.length === 0) {
-      setError('Please select at least one recipient')
-      return
+      setError('Please select at least one recipient');
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
       // Insert message into database
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          event_id: eventId,
-          sender_user_id: user.id,
-          content: message.trim(),
-          message_type: messageType,
-          recipients: messageType === 'direct' ? selectedParticipants : null
-        })
+      const { error: messageError } = await supabase.from('messages').insert({
+        event_id: eventId,
+        sender_user_id: user.id,
+        content: message.trim(),
+        message_type: messageType,
+        recipients: messageType === 'direct' ? selectedParticipants : null,
+      });
 
-      if (messageError) throw messageError
+      if (messageError) throw messageError;
 
       // Reset form
-      setMessage('')
-      setSelectedParticipants([])
-      setMessageType('announcement')
-      
-      onMessageSent?.()
+      setMessage('');
+      setSelectedParticipants([]);
+      setMessageType('announcement');
+
+      onMessageSent?.();
     } catch (err) {
-      console.error('Error sending message:', err)
-      setError('Failed to send message. Please try again.')
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [message, messageType, selectedParticipants, eventId, onMessageSent])
+  }, [message, messageType, selectedParticipants, eventId, onMessageSent]);
 
   const handleParticipantToggle = (participantId: string) => {
-    setSelectedParticipants(prev => 
+    setSelectedParticipants((prev) =>
       prev.includes(participantId)
-        ? prev.filter(id => id !== participantId)
-        : [...prev, participantId]
-    )
-  }
+        ? prev.filter((id) => id !== participantId)
+        : [...prev, participantId],
+    );
+  };
 
   const handleSelectAll = () => {
     if (selectedParticipants.length === participants.length) {
-      setSelectedParticipants([])
+      setSelectedParticipants([]);
     } else {
-      setSelectedParticipants(participants.map(p => p.id))
+      setSelectedParticipants(participants.map((p) => p.id));
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
@@ -182,18 +197,19 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
               <label className="block text-sm font-medium text-stone-700">
                 Select Recipients ({selectedParticipants.length} selected)
               </label>
-              <Button
-                onClick={handleSelectAll}
-                variant="outline"
-                size="sm"
-              >
-                {selectedParticipants.length === participants.length ? 'Deselect All' : 'Select All'}
+              <Button onClick={handleSelectAll} variant="outline" size="sm">
+                {selectedParticipants.length === participants.length
+                  ? 'Deselect All'
+                  : 'Select All'}
               </Button>
             </div>
 
             <div className="max-h-48 overflow-y-auto border border-stone-200 rounded-lg">
               {participants.map((participant) => (
-                <div key={participant.id} className="flex items-center p-3 hover:bg-stone-50 border-b border-stone-100 last:border-b-0">
+                <div
+                  key={participant.id}
+                  className="flex items-center p-3 hover:bg-stone-50 border-b border-stone-100 last:border-b-0"
+                >
                   <input
                     type="checkbox"
                     id={`participant-${participant.id}`}
@@ -201,7 +217,10 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
                     onChange={() => handleParticipantToggle(participant.id)}
                     className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-stone-300 rounded"
                   />
-                  <label htmlFor={`participant-${participant.id}`} className="flex-1 cursor-pointer">
+                  <label
+                    htmlFor={`participant-${participant.id}`}
+                    className="flex-1 cursor-pointer"
+                  >
                     <div className="text-sm font-medium text-stone-900">
                       {participant.user?.full_name || 'Unnamed Participant'}
                     </div>
@@ -217,7 +236,10 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
 
         {/* Message Input */}
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-stone-700 mb-2">
+          <label
+            htmlFor="message"
+            className="block text-sm font-medium text-stone-700 mb-2"
+          >
             Message
           </label>
           <textarea
@@ -236,21 +258,32 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
         {/* Preview */}
         {preview && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-purple-800 mb-2">Message Preview</h3>
+            <h3 className="text-sm font-medium text-purple-800 mb-2">
+              Message Preview
+            </h3>
             <div className="text-sm text-purple-700">
               <div className="mb-1">
-                <strong>Recipients:</strong> {preview.recipientCount} participant{preview.recipientCount !== 1 ? 's' : ''}
+                <strong>Recipients:</strong> {preview.recipientCount}{' '}
+                participant{preview.recipientCount !== 1 ? 's' : ''}
               </div>
               {preview.recipients.length > 0 && (
                 <div className="mb-1">
                   <strong>To:</strong> {preview.recipients.join(', ')}
                   {preview.recipientCount > preview.recipients.length && (
-                    <span className="text-purple-600"> (+{preview.recipientCount - preview.recipients.length} more)</span>
+                    <span className="text-purple-600">
+                      {' '}
+                      (+{preview.recipientCount -
+                        preview.recipients.length}{' '}
+                      more)
+                    </span>
                   )}
                 </div>
               )}
               <div>
-                <strong>Type:</strong> {messageType === 'announcement' ? 'Announcement' : 'Direct Message'}
+                <strong>Type:</strong>{' '}
+                {messageType === 'announcement'
+                  ? 'Announcement'
+                  : 'Direct Message'}
               </div>
             </div>
           </div>
@@ -260,7 +293,11 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
         <div className="flex justify-end">
           <Button
             onClick={handleSendMessage}
-            disabled={loading || !message.trim() || (messageType === 'direct' && selectedParticipants.length === 0)}
+            disabled={
+              loading ||
+              !message.trim() ||
+              (messageType === 'direct' && selectedParticipants.length === 0)
+            }
             className="min-w-32"
           >
             {loading ? (
@@ -278,5 +315,5 @@ export function MessageComposer({ eventId, onMessageSent }: MessageComposerProps
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

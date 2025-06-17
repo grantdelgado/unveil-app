@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/app/reference/supabase.types'
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/app/reference/supabase.types';
 
 // Create typed Supabase client with enhanced session management
 export const supabase = createClient<Database>(
@@ -16,13 +16,13 @@ export const supabase = createClient<Database>(
       // Detect session in URL (for magic links, etc.)
       detectSessionInUrl: true,
       // Longer session timeout (24 hours)
-      flowType: 'pkce'
+      flowType: 'pkce',
     },
     // Global request timeout
     global: {
       headers: {
-        'X-Client-Info': 'unveil-wedding-app'
-      }
-    }
-  }
-) 
+        'X-Client-Info': 'unveil-wedding-app',
+      },
+    },
+  },
+);

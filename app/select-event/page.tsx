@@ -1,67 +1,77 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { useUserEventsSorted } from '@/hooks/events/useUserEventsSorted'
+import { useRouter } from 'next/navigation';
+import { useUserEventsSorted } from '@/hooks/events/useUserEventsSorted';
 
 export default function SelectEventPage() {
-  const { events, loading, error, refetch } = useUserEventsSorted()
-  const router = useRouter()
+  const { events, loading, error, refetch } = useUserEventsSorted();
+  const router = useRouter();
 
-  const handleEventSelect = (event: { event_id: string; user_role: string }) => {
+  const handleEventSelect = (event: {
+    event_id: string;
+    user_role: string;
+  }) => {
     if (!event.user_role) {
-      console.error('Unable to determine user role for this event.')
-      return
+      console.error('Unable to determine user role for this event.');
+      return;
     }
 
     // Route based on user's role for this event
     if (event.user_role === 'host') {
-      router.push(`/host/events/${event.event_id}/dashboard`)
+      router.push(`/host/events/${event.event_id}/dashboard`);
     } else if (event.user_role === 'guest') {
-      router.push(`/guest/events/${event.event_id}/home`)
+      router.push(`/guest/events/${event.event_id}/home`);
     } else {
-      console.error('Invalid role for this event.')
+      console.error('Invalid role for this event.');
     }
-  }
+  };
 
   const formatEventDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
-        month: 'long', 
-        day: 'numeric'
-      })
+        month: 'long',
+        day: 'numeric',
+      });
     } catch {
-      return dateString
+      return dateString;
     }
-  }
+  };
 
-  const getRoleDisplay = (event: { user_role: string; is_primary_host: boolean }) => {
+  const getRoleDisplay = (event: {
+    user_role: string;
+    is_primary_host: boolean;
+  }) => {
     if (event.is_primary_host) {
-      return { text: 'Host', color: 'bg-rose-100 text-rose-800', icon: '👑' }
+      return { text: 'Host', color: 'bg-rose-100 text-rose-800', icon: '👑' };
     } else if (event.user_role === 'host') {
-      return { text: 'Co-Host', color: 'bg-purple-100 text-purple-800', icon: '🤝' }
+      return {
+        text: 'Co-Host',
+        color: 'bg-purple-100 text-purple-800',
+        icon: '🤝',
+      };
     } else {
-      return { text: 'Guest', color: 'bg-blue-100 text-blue-800', icon: '🎉' }
+      return { text: 'Guest', color: 'bg-blue-100 text-blue-800', icon: '🎉' };
     }
-  }
+  };
 
   const getRSVPDisplay = (status: string | null) => {
     switch (status) {
       case 'attending':
-        return { text: 'Attending', color: 'bg-green-100 text-green-800' }
+        return { text: 'Attending', color: 'bg-green-100 text-green-800' };
       case 'declined':
-        return { text: 'Declined', color: 'bg-red-100 text-red-800' }
+        return { text: 'Declined', color: 'bg-red-100 text-red-800' };
       case 'maybe':
-        return { text: 'Maybe', color: 'bg-amber-100 text-amber-800' }
+        return { text: 'Maybe', color: 'bg-amber-100 text-amber-800' };
       default:
-        return { text: 'Pending', color: 'bg-stone-100 text-stone-800' }
+        return { text: 'Pending', color: 'bg-stone-100 text-stone-800' };
     }
-  }
+  };
 
   // Separate events by role
-  const hostedEvents = events.filter(event => event.user_role === 'host')
-  const guestEvents = events.filter(event => event.user_role === 'guest')
+  const hostedEvents = events.filter((event) => event.user_role === 'host');
+  const guestEvents = events.filter((event) => event.user_role === 'guest');
 
   if (loading) {
     return (
@@ -71,7 +81,7 @@ export default function SelectEventPage() {
           <p className="text-stone-600">Loading your events...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -79,7 +89,9 @@ export default function SelectEventPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         {/* App Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-brand-pink mb-6 tracking-tight">Unveil</h1>
+          <h1 className="text-3xl font-semibold text-brand-pink mb-6 tracking-tight">
+            Unveil
+          </h1>
         </div>
 
         {/* Profile Button - simplified to icon only */}
@@ -88,8 +100,7 @@ export default function SelectEventPage() {
             onClick={() => router.push('/profile')}
             className="w-8 h-8 bg-stone-300 rounded-full hover:bg-stone-400 transition-colors"
             aria-label="Go to profile"
-          >
-          </button>
+          ></button>
         </div>
 
         {/* Error Display */}
@@ -111,7 +122,9 @@ export default function SelectEventPage() {
           {events.length === 0 && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎭</div>
-              <h2 className="text-xl font-semibold text-stone-800 mb-2">You don&apos;t have any events yet.</h2>
+              <h2 className="text-xl font-semibold text-stone-800 mb-2">
+                You don&apos;t have any events yet.
+              </h2>
               <p className="text-stone-600 mb-6">
                 Create an event or wait to be invited to one.
               </p>
@@ -124,11 +137,13 @@ export default function SelectEventPage() {
           {/* Host Events Section */}
           {hostedEvents.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-stone-800 mb-4">Your Event</h2>
+              <h2 className="text-lg font-semibold text-stone-800 mb-4">
+                Your Event
+              </h2>
               <div className="space-y-4">
                 {hostedEvents.map((event) => {
-                  const role = getRoleDisplay(event)
-                  
+                  const role = getRoleDisplay(event);
+
                   return (
                     <button
                       key={event.event_id}
@@ -141,18 +156,20 @@ export default function SelectEventPage() {
                             <h3 className="text-lg font-semibold text-stone-800 group-hover:text-stone-900">
                               {event.title}
                             </h3>
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}
+                            >
                               <span>{role.icon}</span>
                               {role.text}
                             </span>
                           </div>
-                          
+
                           <div className="space-y-1 text-sm text-stone-600">
                             <div className="flex items-center gap-2">
                               <span>📅</span>
                               <span>{formatEventDate(event.event_date)}</span>
                             </div>
-                            
+
                             {event.location && (
                               <div className="flex items-center gap-2">
                                 <span>📍</span>
@@ -161,13 +178,13 @@ export default function SelectEventPage() {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="text-stone-400 group-hover:text-stone-600 transition-colors">
                           →
                         </div>
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -176,12 +193,14 @@ export default function SelectEventPage() {
           {/* Guest Events Section */}
           {guestEvents.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-stone-800 mb-4">Invited To</h2>
+              <h2 className="text-lg font-semibold text-stone-800 mb-4">
+                Invited To
+              </h2>
               <div className="space-y-4">
                 {guestEvents.map((event) => {
-                  const role = getRoleDisplay(event)
-                  const rsvp = getRSVPDisplay(event.rsvp_status)
-                  
+                  const role = getRoleDisplay(event);
+                  const rsvp = getRSVPDisplay(event.rsvp_status);
+
                   return (
                     <button
                       key={event.event_id}
@@ -194,42 +213,46 @@ export default function SelectEventPage() {
                             <h3 className="text-lg font-semibold text-stone-800 group-hover:text-stone-900">
                               {event.title}
                             </h3>
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${role.color}`}
+                            >
                               <span>{role.icon}</span>
                               {role.text}
                             </span>
                           </div>
-                          
+
                           <div className="space-y-1 text-sm text-stone-600">
                             <div className="flex items-center gap-2">
                               <span>📅</span>
                               <span>{formatEventDate(event.event_date)}</span>
                             </div>
-                            
+
                             {event.location && (
                               <div className="flex items-center gap-2">
                                 <span>📍</span>
                                 <span>{event.location}</span>
                               </div>
                             )}
-                            
+
                             {event.rsvp_status && (
                               <div className="flex items-center gap-2">
                                 <span>✉️</span>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${rsvp.color}`}>
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${rsvp.color}`}
+                                >
                                   {rsvp.text}
                                 </span>
                               </div>
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="text-stone-400 group-hover:text-stone-600 transition-colors">
                           →
                         </div>
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -237,5 +260,5 @@ export default function SelectEventPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

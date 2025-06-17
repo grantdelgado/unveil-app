@@ -1,87 +1,92 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { getSubscriptionManager, type SubscriptionConfig } from '@/lib/realtime/SubscriptionManager'
-import { logger } from '@/lib/logger'
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { useEffect, useRef, useCallback } from 'react';
+import {
+  getSubscriptionManager,
+  type SubscriptionConfig,
+} from '@/lib/realtime/SubscriptionManager';
+import { logger } from '@/lib/logger';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export interface UseRealtimeSubscriptionOptions {
   /**
    * Unique identifier for this subscription
    */
-  subscriptionId: string
-  
+  subscriptionId: string;
+
   /**
    * Table to subscribe to
    */
-  table: string
-  
+  table: string;
+
   /**
    * Event types to listen for
    */
-  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE'
-  
+  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
+
   /**
    * Optional filter for the subscription
    */
-  filter?: string
-  
+  filter?: string;
+
   /**
    * Schema name (defaults to 'public')
    */
-  schema?: string
-  
+  schema?: string;
+
   /**
    * Whether the subscription should be active
    * Set to false to temporarily disable
    */
-  enabled?: boolean
-  
+  enabled?: boolean;
+
   /**
    * Callback for when data changes
    */
-  onDataChange: (payload: RealtimePostgresChangesPayload<any>) => void
-  
+  onDataChange: (payload: RealtimePostgresChangesPayload<any>) => void;
+
   /**
    * Optional callback for subscription errors
    */
-  onError?: (error: Error) => void
-  
+  onError?: (error: Error) => void;
+
   /**
    * Optional callback for subscription status changes
    */
-  onStatusChange?: (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void
+  onStatusChange?: (
+    status: 'connecting' | 'connected' | 'disconnected' | 'error',
+  ) => void;
 }
 
 export interface UseRealtimeSubscriptionReturn {
   /**
    * Whether the subscription is currently active
    */
-  isConnected: boolean
-  
+  isConnected: boolean;
+
   /**
    * Current error state
    */
-  error: Error | null
-  
+  error: Error | null;
+
   /**
    * Manually reconnect the subscription
    */
-  reconnect: () => void
-  
+  reconnect: () => void;
+
   /**
    * Get subscription statistics
    */
   getStats: () => {
-    totalSubscriptions: number
-    activeSubscriptions: number
-    errorCount: number
-    connectionState: 'connected' | 'disconnected' | 'connecting' | 'error'
-    uptime: number
-  }
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    errorCount: number;
+    connectionState: 'connected' | 'disconnected' | 'connecting' | 'error';
+    uptime: number;
+  };
 }
 
 /**
  * React hook for managing real-time subscriptions with automatic cleanup
- * 
+ *
  * @example
  * ```typescript
  * const { isConnected, error, reconnect } = useRealtimeSubscription({
@@ -109,32 +114,38 @@ export function useRealtimeSubscription({
   enabled = true,
   onDataChange,
   onError,
-  onStatusChange
+  onStatusChange,
 }: UseRealtimeSubscriptionOptions): UseRealtimeSubscriptionReturn {
-  const unsubscribeRef = useRef<(() => void) | null>(null)
-  const isConnectedRef = useRef(false)
-  const errorRef = useRef<Error | null>(null)
-  const subscriptionManager = getSubscriptionManager()
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const isConnectedRef = useRef(false);
+  const errorRef = useRef<Error | null>(null);
+  const subscriptionManager = getSubscriptionManager();
 
   // Stable callback references
-  const stableOnDataChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
-    try {
-      onDataChange(payload)
-    } catch (error) {
-      logger.error(`❌ Error in onDataChange callback for ${subscriptionId}`, error)
-      if (onError) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+  const stableOnDataChange = useCallback(
+    (payload: RealtimePostgresChangesPayload<any>) => {
+      try {
+        onDataChange(payload);
+      } catch (error) {
+        logger.error(
+          `❌ Error in onDataChange callback for ${subscriptionId}`,
+          error,
+        );
+        if (onError) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
       }
-    }
-  }, [subscriptionId, onDataChange, onError])
+    },
+    [subscriptionId, onDataChange, onError],
+  );
 
   // Setup subscription
   useEffect(() => {
     if (!enabled || !subscriptionId || !table) {
-      return
+      return;
     }
 
-    logger.realtime(`🔗 Setting up subscription: ${subscriptionId}`)
+    logger.realtime(`🔗 Setting up subscription: ${subscriptionId}`);
 
     try {
       const config: SubscriptionConfig = {
@@ -142,55 +153,55 @@ export function useRealtimeSubscription({
         event,
         schema,
         filter,
-        callback: stableOnDataChange
-      }
+        callback: stableOnDataChange,
+      };
 
       // Create the subscription
-      const unsubscribe = subscriptionManager.subscribe(subscriptionId, config)
-      unsubscribeRef.current = unsubscribe
-      
+      const unsubscribe = subscriptionManager.subscribe(subscriptionId, config);
+      unsubscribeRef.current = unsubscribe;
+
       // Update connection state
-      isConnectedRef.current = true
-      errorRef.current = null
-      
+      isConnectedRef.current = true;
+      errorRef.current = null;
+
       if (onStatusChange) {
-        onStatusChange('connecting')
+        onStatusChange('connecting');
         // Simulate connection success after a brief delay
-        setTimeout(() => onStatusChange('connected'), 100)
+        setTimeout(() => onStatusChange('connected'), 100);
       }
 
-      logger.realtime(`✅ Subscription setup complete: ${subscriptionId}`)
-
+      logger.realtime(`✅ Subscription setup complete: ${subscriptionId}`);
     } catch (error) {
-      logger.error(`❌ Failed to setup subscription: ${subscriptionId}`, error)
-      
-      isConnectedRef.current = false
-      errorRef.current = error instanceof Error ? error : new Error(String(error))
-      
+      logger.error(`❌ Failed to setup subscription: ${subscriptionId}`, error);
+
+      isConnectedRef.current = false;
+      errorRef.current =
+        error instanceof Error ? error : new Error(String(error));
+
       if (onError) {
-        onError(errorRef.current)
+        onError(errorRef.current);
       }
-      
+
       if (onStatusChange) {
-        onStatusChange('error')
+        onStatusChange('error');
       }
     }
 
     // Cleanup function
     return () => {
-      logger.realtime(`🧹 Cleaning up subscription: ${subscriptionId}`)
-      
+      logger.realtime(`🧹 Cleaning up subscription: ${subscriptionId}`);
+
       if (unsubscribeRef.current) {
-        unsubscribeRef.current()
-        unsubscribeRef.current = null
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
-      
-      isConnectedRef.current = false
-      
+
+      isConnectedRef.current = false;
+
       if (onStatusChange) {
-        onStatusChange('disconnected')
+        onStatusChange('disconnected');
       }
-    }
+    };
   }, [
     subscriptionId,
     table,
@@ -201,63 +212,66 @@ export function useRealtimeSubscription({
     stableOnDataChange,
     onError,
     onStatusChange,
-    subscriptionManager
-  ])
+    subscriptionManager,
+  ]);
 
   // Reconnect function
   const reconnect = useCallback(() => {
-    logger.realtime(`🔄 Manual reconnect requested: ${subscriptionId}`)
-    
+    logger.realtime(`🔄 Manual reconnect requested: ${subscriptionId}`);
+
     // Clean up existing subscription
     if (unsubscribeRef.current) {
-      unsubscribeRef.current()
-      unsubscribeRef.current = null
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
-    
+
     if (onStatusChange) {
-      onStatusChange('connecting')
+      onStatusChange('connecting');
     }
-    
+
     // Recreate subscription after a brief delay
     setTimeout(() => {
-      if (!enabled) return
-      
+      if (!enabled) return;
+
       try {
         const config: SubscriptionConfig = {
           table,
           event,
           schema,
           filter,
-          callback: stableOnDataChange
+          callback: stableOnDataChange,
+        };
+
+        const unsubscribe = subscriptionManager.subscribe(
+          subscriptionId,
+          config,
+        );
+        unsubscribeRef.current = unsubscribe;
+
+        isConnectedRef.current = true;
+        errorRef.current = null;
+
+        if (onStatusChange) {
+          onStatusChange('connected');
         }
 
-        const unsubscribe = subscriptionManager.subscribe(subscriptionId, config)
-        unsubscribeRef.current = unsubscribe
-        
-        isConnectedRef.current = true
-        errorRef.current = null
-        
-        if (onStatusChange) {
-          onStatusChange('connected')
-        }
-        
-        logger.realtime(`✅ Manual reconnect successful: ${subscriptionId}`)
-        
+        logger.realtime(`✅ Manual reconnect successful: ${subscriptionId}`);
       } catch (error) {
-        logger.error(`❌ Manual reconnect failed: ${subscriptionId}`, error)
-        
-        isConnectedRef.current = false
-        errorRef.current = error instanceof Error ? error : new Error(String(error))
-        
+        logger.error(`❌ Manual reconnect failed: ${subscriptionId}`, error);
+
+        isConnectedRef.current = false;
+        errorRef.current =
+          error instanceof Error ? error : new Error(String(error));
+
         if (onError) {
-          onError(errorRef.current)
+          onError(errorRef.current);
         }
-        
+
         if (onStatusChange) {
-          onStatusChange('error')
+          onStatusChange('error');
         }
       }
-    }, 100)
+    }, 100);
   }, [
     subscriptionId,
     table,
@@ -268,20 +282,20 @@ export function useRealtimeSubscription({
     stableOnDataChange,
     onError,
     onStatusChange,
-    subscriptionManager
-  ])
+    subscriptionManager,
+  ]);
 
   // Get stats function
   const getStats = useCallback(() => {
-    return subscriptionManager.getStats()
-  }, [subscriptionManager])
+    return subscriptionManager.getStats();
+  }, [subscriptionManager]);
 
   return {
     isConnected: isConnectedRef.current,
     error: errorRef.current,
     reconnect,
-    getStats
-  }
+    getStats,
+  };
 }
 
 /**
@@ -294,14 +308,14 @@ export function useEventSubscription({
   event = '*',
   onDataChange,
   onError,
-  enabled = true
+  enabled = true,
 }: {
-  eventId: string | null
-  table: string
-  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE'
-  onDataChange: (payload: RealtimePostgresChangesPayload<any>) => void
-  onError?: (error: Error) => void
-  enabled?: boolean
+  eventId: string | null;
+  table: string;
+  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
+  onDataChange: (payload: RealtimePostgresChangesPayload<any>) => void;
+  onError?: (error: Error) => void;
+  enabled?: boolean;
 }): UseRealtimeSubscriptionReturn {
   return useRealtimeSubscription({
     subscriptionId: `${table}-${eventId}`,
@@ -310,6 +324,6 @@ export function useEventSubscription({
     filter: eventId ? `event_id=eq.${eventId}` : undefined,
     enabled: enabled && Boolean(eventId),
     onDataChange,
-    onError
-  })
-} 
+    onError,
+  });
+}

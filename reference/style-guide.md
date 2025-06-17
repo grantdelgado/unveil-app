@@ -7,63 +7,80 @@
 
 \f0\fs24 \cf0 # Unveil Component Style Guide\
 \
-## \uc0\u55356 \u57256  Typography\
-| Use Case           | Font             | Size     | Weight |\
+
+## \uc0\u55356 \u57256 Typography\
+
+| Use Case | Font | Size | Weight |\
 |--------------------|------------------|----------|--------|\
-| Headings           | Inter/Satoshi    | 24\'9636px  | Semibold / Bold |\
-| Body Text          | Inter            | 14\'9616px  | Regular |\
-| Labels & Captions  | Inter            | 12\'9614px  | Medium |\
+| Headings | Inter/Satoshi | 24\'9636px | Semibold / Bold |\
+| Body Text | Inter | 14\'9616px | Regular |\
+| Labels & Captions | Inter | 12\'9614px | Medium |\
 \
 ---\
 \
-## \uc0\u55356 \u57256  Colors\
+
+## \uc0\u55356 \u57256 Colors\
+
 \
+
 ### Neutrals\
+
 - `--color-bg`: #FAFAFA\
 - `--color-text`: #333333\
 - `--color-muted`: #888888\
-\
+  \
+
 ### Accents\
+
 - `--color-primary`: #F7E8E0 (muted rose)\
 - `--color-accent`: #D4C2FB (dusk lavender)\
 - `--color-success`: #CCE8D4\
 - `--color-error`: #FDDCDC\
+  \
+  ---\
+  \
+
+## \uc0\u55357 \u56600 Buttons\
+
 \
----\
-\
-## \uc0\u55357 \u56600  Buttons\
-\
-| Variant   | Style Description                            |\
+| Variant | Style Description |\
 |-----------|-----------------------------------------------|\
-| Primary   | Solid fill (rose), white text, soft shadow    |\
-| Secondary | Muted border, transparent background          |\
-| Ghost     | Text-only, for low-emphasis actions           |\
+| Primary | Solid fill (rose), white text, soft shadow |\
+| Secondary | Muted border, transparent background |\
+| Ghost | Text-only, for low-emphasis actions |\
 \
 ---\
 \
-## \uc0\u9989  Inputs\
+
+## \uc0\u9989 Inputs\
+
 \
+
 - Rounded corners (8px radius)\
 - Label above field\
 - Subtle focus ring (#D4C2FB)\
 - Support light and dark themes\
+  \
+  ---\
+  \
+
+## \uc0\u55357 \u56550 Component Tokens\
+
 \
----\
-\
-## \uc0\u55357 \u56550  Component Tokens\
-\
-| Token             | Value            |\
+| Token | Value |\
 |------------------|------------------|\
-| --radius-sm      | 4px              |\
-| --radius-md      | 8px              |\
-| --radius-lg      | 12px             |\
-| --elevation-1    | 0 1px 3px rgba...|\
-| --space-sm       | 8px              |\
-| --space-md       | 16px             |\
+| --radius-sm | 4px |\
+| --radius-md | 8px |\
+| --radius-lg | 12px |\
+| --elevation-1 | 0 1px 3px rgba...|\
+| --space-sm | 8px |\
+| --space-md | 16px |\
 \
 ---\
 \
-## \uc0\u55357 \u56764 \u65039  Design Ethos\
+
+## \uc0\u55357 \u56764 \u65039 Design Ethos\
+
 - Use empty states to guide gently\
 - Use animations sparingly (fade-in, slide-up)\
 - Celebrate with restraint (no confetti unless deliberate)\

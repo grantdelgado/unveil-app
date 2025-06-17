@@ -1,51 +1,53 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
-import { LoadingPage } from '@/components/ui/LoadingSpinner'
-import { GuestImportWizard } from '@/components/features/guests'
-import { formatEventDate } from '@/lib/utils'
-import type { Database } from '@/app/reference/supabase.types'
-import { 
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
+import { LoadingPage } from '@/components/ui/LoadingSpinner';
+import { GuestImportWizard } from '@/components/features/guests';
+import { formatEventDate } from '@/lib/utils';
+import type { Database } from '@/app/reference/supabase.types';
+import {
   GuestManagement,
   MessageComposer,
   EventAnalytics,
   QuickActions,
   NotificationCenter,
-  SMSTestPanel
-} from '@/components/features/host-dashboard'
-import { WelcomeBanner } from '@/components/features/events'
+  SMSTestPanel,
+} from '@/components/features/host-dashboard';
+import { WelcomeBanner } from '@/components/features/events';
 
-type Event = Database['public']['Tables']['events']['Row']
+type Event = Database['public']['Tables']['events']['Row'];
 
 export default function EventDashboardPage() {
-  const params = useParams()
-  const router = useRouter()
-  const eventId = params.eventId as string
+  const params = useParams();
+  const router = useRouter();
+  const eventId = params.eventId as string;
 
-  const [event, setEvent] = useState<Event | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [showGuestImport, setShowGuestImport] = useState(false)
-  const [participantCount, setParticipantCount] = useState(0)
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showGuestImport, setShowGuestImport] = useState(false);
+  const [participantCount, setParticipantCount] = useState(0);
 
   useEffect(() => {
-    if (!eventId) return
+    if (!eventId) return;
 
     const fetchEventData = async () => {
       try {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
 
         // Verify user access and fetch event
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
-          router.push('/login')
-          return
+          router.push('/login');
+          return;
         }
 
         // Get event details
@@ -54,78 +56,92 @@ export default function EventDashboardPage() {
           .select('*')
           .eq('id', eventId)
           .eq('host_user_id', user.id)
-          .single()
+          .single();
 
         if (eventError) {
-          console.error('Event fetch error:', eventError)
+          console.error('Event fetch error:', eventError);
           if (eventError.code === 'PGRST116') {
-            setError('Event not found or you do not have permission to access it.')
+            setError(
+              'Event not found or you do not have permission to access it.',
+            );
           } else {
-            setError('Failed to load event data')
+            setError('Failed to load event data');
           }
-          return
+          return;
         }
 
-        setEvent(eventData)
+        setEvent(eventData);
 
         // Get participant count
-        const { data: participantData, error: participantError } = await supabase
-          .from('event_participants')
-          .select('id')
-          .eq('event_id', eventId)
+        const { data: participantData, error: participantError } =
+          await supabase
+            .from('event_participants')
+            .select('id')
+            .eq('event_id', eventId);
 
         if (participantError) {
-          console.error('Participant count error:', participantError)
+          console.error('Participant count error:', participantError);
         } else {
-          setParticipantCount(participantData?.length || 0)
+          setParticipantCount(participantData?.length || 0);
         }
-
       } catch (err) {
-        console.error('Unexpected error:', err)
-        setError('An unexpected error occurred')
+        console.error('Unexpected error:', err);
+        setError('An unexpected error occurred');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchEventData()
-  }, [eventId, router])
+    fetchEventData();
+  }, [eventId, router]);
 
   useEffect(() => {
     // Listen for navigation tab changes from bottom navigation
     const handleNavigationTabChange = (event: CustomEvent) => {
       if (event.detail?.tab) {
-        setActiveTab(event.detail.tab)
+        setActiveTab(event.detail.tab);
       }
-    }
+    };
 
     const handleDashboardTabChange = (event: CustomEvent) => {
       if (event.detail?.tab) {
-        setActiveTab(event.detail.tab)
+        setActiveTab(event.detail.tab);
       }
-    }
+    };
 
-    window.addEventListener('navigationTabChange', handleNavigationTabChange as EventListener)
-    window.addEventListener('dashboardTabChange', handleDashboardTabChange as EventListener)
+    window.addEventListener(
+      'navigationTabChange',
+      handleNavigationTabChange as EventListener,
+    );
+    window.addEventListener(
+      'dashboardTabChange',
+      handleDashboardTabChange as EventListener,
+    );
 
     return () => {
-      window.removeEventListener('navigationTabChange', handleNavigationTabChange as EventListener)
-      window.removeEventListener('dashboardTabChange', handleDashboardTabChange as EventListener)
-    }
-  }, [])
+      window.removeEventListener(
+        'navigationTabChange',
+        handleNavigationTabChange as EventListener,
+      );
+      window.removeEventListener(
+        'dashboardTabChange',
+        handleDashboardTabChange as EventListener,
+      );
+    };
+  }, []);
 
   const handleDataRefresh = async () => {
     // Refresh participant count
     const { data: participantData } = await supabase
       .from('event_participants')
       .select('id')
-      .eq('event_id', eventId)
+      .eq('event_id', eventId);
 
-    setParticipantCount(participantData?.length || 0)
-  }
+    setParticipantCount(participantData?.length || 0);
+  };
 
   if (loading) {
-    return <LoadingPage />
+    return <LoadingPage />;
   }
 
   if (error) {
@@ -133,17 +149,16 @@ export default function EventDashboardPage() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-stone-200 p-8 text-center">
           <div className="text-4xl mb-4">⚠️</div>
-          <h1 className="text-xl font-semibold text-stone-800 mb-2">Unable to Load Event</h1>
+          <h1 className="text-xl font-semibold text-stone-800 mb-2">
+            Unable to Load Event
+          </h1>
           <p className="text-stone-600 mb-6">{error}</p>
           <div className="space-y-3">
-            <Button 
-              onClick={() => window.location.reload()}
-              className="w-full"
-            >
+            <Button onClick={() => window.location.reload()} className="w-full">
               Try Again
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => router.push('/select-event')}
               className="w-full"
             >
@@ -152,7 +167,7 @@ export default function EventDashboardPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!event) {
@@ -160,14 +175,19 @@ export default function EventDashboardPage() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-4xl mb-4">🤔</div>
-          <h1 className="text-xl font-semibold text-stone-800 mb-2">Event Not Found</h1>
-          <p className="text-stone-600 mb-6">The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
+          <h1 className="text-xl font-semibold text-stone-800 mb-2">
+            Event Not Found
+          </h1>
+          <p className="text-stone-600 mb-6">
+            The event you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have access to it.
+          </p>
           <Button onClick={() => router.push('/select-event')}>
             Back to Events
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -179,8 +199,8 @@ export default function EventDashboardPage() {
             <GuestImportWizard
               eventId={eventId}
               onImportComplete={() => {
-                setShowGuestImport(false)
-                handleDataRefresh()
+                setShowGuestImport(false);
+                handleDataRefresh();
               }}
               onClose={() => setShowGuestImport(false)}
             />
@@ -207,7 +227,9 @@ export default function EventDashboardPage() {
                     </div>
                   )}
                   <div>
-                    <h1 className="text-3xl font-bold text-stone-800 mb-2">{event.title}</h1>
+                    <h1 className="text-3xl font-bold text-stone-800 mb-2">
+                      {event.title}
+                    </h1>
                     <div className="flex items-center space-x-4 text-stone-600">
                       <div className="flex items-center">
                         <span className="text-xl mr-2">📅</span>
@@ -222,9 +244,11 @@ export default function EventDashboardPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {event.description && (
-                  <p className="text-stone-600 max-w-2xl">{event.description}</p>
+                  <p className="text-stone-600 max-w-2xl">
+                    {event.description}
+                  </p>
                 )}
               </div>
 
@@ -237,7 +261,7 @@ export default function EventDashboardPage() {
 
         {/* Welcome Banner */}
         <div className="px-6 py-6">
-          <WelcomeBanner 
+          <WelcomeBanner
             guestCount={participantCount}
             onImportGuests={() => setShowGuestImport(true)}
             onSendFirstMessage={() => setActiveTab('messages')}
@@ -289,14 +313,12 @@ export default function EventDashboardPage() {
                 </button>
               </nav>
             </div>
-            
+
             <div className="p-6">
-              {activeTab === 'overview' && (
-                <EventAnalytics eventId={eventId} />
-              )}
+              {activeTab === 'overview' && <EventAnalytics eventId={eventId} />}
 
               {activeTab === 'guests' && (
-                <GuestManagement 
+                <GuestManagement
                   eventId={eventId}
                   onGuestUpdated={handleDataRefresh}
                 />
@@ -304,10 +326,10 @@ export default function EventDashboardPage() {
 
               {activeTab === 'messages' && (
                 <div className="space-y-6">
-                  <MessageComposer 
+                  <MessageComposer
                     eventId={eventId}
                     onMessageSent={() => {
-                      console.log('Message sent successfully!')
+                      console.log('Message sent successfully!');
                     }}
                   />
                   <SMSTestPanel eventId={eventId} />
@@ -318,5 +340,5 @@ export default function EventDashboardPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

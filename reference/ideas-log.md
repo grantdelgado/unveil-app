@@ -31,6 +31,7 @@ This document serves as a running list of new feature ideas, potential improveme
 ## Log
 
 ### [Example Idea]
+
 **Date Suggested:** 2024-07-27
 **Suggested By:** AI Assistant
 **Idea/Feature Title:** Gamified Guest Photo Contributions
@@ -42,4 +43,4 @@ This document serves as a running list of new feature ideas, potential improveme
 
 ---
 
-*(Add new ideas above this line, using the template)* 
+_(Add new ideas above this line, using the template)_

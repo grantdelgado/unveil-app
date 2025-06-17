@@ -1,85 +1,87 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/Button'
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 // Only show in development
-const isDevelopment = process.env.NODE_ENV === 'development'
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 interface TestUser {
-  id: string
-  email: string
-  name: string
-  role: string
-  created_at: string
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  created_at: string;
 }
 
 interface CreateUserResponse {
-  success: boolean
-  user?: TestUser
-  credentials?: { email: string; password: string }
-  login_url?: string
-  message?: string
-  error?: string
+  success: boolean;
+  user?: TestUser;
+  credentials?: { email: string; password: string };
+  login_url?: string;
+  message?: string;
+  error?: string;
 }
 
 export function TestUserCreator() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [users, setUsers] = useState<TestUser[]>([])
-  const [showUsers, setShowUsers] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [users, setUsers] = useState<TestUser[]>([]);
+  const [showUsers, setShowUsers] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: 'guest' as 'host' | 'guest' | 'admin',
-    phone: ''
-  })
+    phone: '',
+  });
 
   // Early return after all hooks are declared
-  if (!isDevelopment) return null
+  if (!isDevelopment) return null;
 
   const createUser = async () => {
     if (!formData.name || !formData.email) {
-      setMessage('❌ Name and email are required')
-      return
+      setMessage('❌ Name and email are required');
+      return;
     }
 
-    setLoading(true)
-    setMessage('Creating user...')
+    setLoading(true);
+    setMessage('Creating user...');
 
     try {
       const response = await fetch('/api/admin/test-users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
+        body: JSON.stringify(formData),
+      });
 
-      const result: CreateUserResponse = await response.json()
+      const result: CreateUserResponse = await response.json();
 
       if (result.success && result.credentials) {
-        setMessage(`✅ Created ${result.user?.name}! Password: ${result.credentials.password}`)
-        
+        setMessage(
+          `✅ Created ${result.user?.name}! Password: ${result.credentials.password}`,
+        );
+
         // Reset form
-        setFormData({ name: '', email: '', role: 'guest', phone: '' })
-        
+        setFormData({ name: '', email: '', role: 'guest', phone: '' });
+
         // Auto-refresh user list if it's showing
         if (showUsers) {
-          await loadUsers()
+          await loadUsers();
         }
       } else {
-        setMessage(`❌ Error: ${result.error}`)
+        setMessage(`❌ Error: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Network error: ${error}`)
+      setMessage(`❌ Network error: ${error}`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const createScenario = async (scenarioName: string) => {
-    setLoading(true)
-    setMessage(`Creating ${scenarioName} scenario...`)
+    setLoading(true);
+    setMessage(`Creating ${scenarioName} scenario...`);
 
     try {
       // For now, just create a basic wedding host
@@ -87,73 +89,75 @@ export function TestUserCreator() {
         name: `${scenarioName} Host`,
         email: `${scenarioName.toLowerCase().replace(/\s+/g, '.')}.host@test.local`,
         role: 'host' as const,
-        phone: `+1555${Math.floor(Math.random() * 9000000) + 1000000}`
-      }
+        phone: `+1555${Math.floor(Math.random() * 9000000) + 1000000}`,
+      };
 
       const response = await fetch('/api/admin/test-users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hostData)
-      })
+        body: JSON.stringify(hostData),
+      });
 
-      const result: CreateUserResponse = await response.json()
+      const result: CreateUserResponse = await response.json();
 
       if (result.success) {
-        setMessage(`✅ Created ${scenarioName} scenario! Check console for details.`)
-        console.log('Created user:', result)
-        
-        if (showUsers) await loadUsers()
+        setMessage(
+          `✅ Created ${scenarioName} scenario! Check console for details.`,
+        );
+        console.log('Created user:', result);
+
+        if (showUsers) await loadUsers();
       } else {
-        setMessage(`❌ Error: ${result.error}`)
+        setMessage(`❌ Error: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Network error: ${error}`)
+      setMessage(`❌ Network error: ${error}`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('/api/admin/test-users')
-      const result = await response.json()
+      const response = await fetch('/api/admin/test-users');
+      const result = await response.json();
 
       if (result.success) {
-        setUsers(result.users || [])
-        setShowUsers(true)
+        setUsers(result.users || []);
+        setShowUsers(true);
       } else {
-        setMessage(`❌ Error loading users: ${result.error}`)
+        setMessage(`❌ Error loading users: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Network error: ${error}`)
+      setMessage(`❌ Network error: ${error}`);
     }
-  }
+  };
 
   const cleanupUsers = async () => {
-    if (!confirm('Delete all test users? This cannot be undone.')) return
+    if (!confirm('Delete all test users? This cannot be undone.')) return;
 
-    setLoading(true)
-    setMessage('Deleting test users...')
+    setLoading(true);
+    setMessage('Deleting test users...');
 
     try {
       const response = await fetch('/api/admin/test-users?all=true', {
-        method: 'DELETE'
-      })
+        method: 'DELETE',
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setMessage(`✅ ${result.message}`)
-        setUsers([])
+        setMessage(`✅ ${result.message}`);
+        setUsers([]);
       } else {
-        setMessage(`❌ Error: ${result.error}`)
+        setMessage(`❌ Error: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Network error: ${error}`)
+      setMessage(`❌ Network error: ${error}`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!isOpen) {
     return (
@@ -165,7 +169,7 @@ export function TestUserCreator() {
           🧪 Test Users
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -218,14 +222,21 @@ export function TestUserCreator() {
             type="email"
             placeholder="email@test.local"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
             className="w-full px-2 py-1 border border-stone-300 rounded text-sm"
             disabled={loading}
           />
           <div className="flex gap-2">
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as 'host' | 'guest' | 'admin' })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  role: e.target.value as 'host' | 'guest' | 'admin',
+                })
+              }
               className="flex-1 px-2 py-1 border border-stone-300 rounded text-sm"
               disabled={loading}
             >
@@ -268,13 +279,15 @@ export function TestUserCreator() {
 
         {/* Message Display */}
         {message && (
-          <div className={`text-xs p-2 rounded ${
-            message.includes('✅') 
-              ? 'bg-green-50 text-green-700' 
-              : message.includes('❌')
-              ? 'bg-red-50 text-red-700'
-              : 'bg-blue-50 text-blue-700'
-          }`}>
+          <div
+            className={`text-xs p-2 rounded ${
+              message.includes('✅')
+                ? 'bg-green-50 text-green-700'
+                : message.includes('❌')
+                  ? 'bg-red-50 text-red-700'
+                  : 'bg-blue-50 text-blue-700'
+            }`}
+          >
             {message}
           </div>
         )}
@@ -289,9 +302,14 @@ export function TestUserCreator() {
             ) : (
               <div className="space-y-1 p-2">
                 {users.map((user) => (
-                  <div key={user.id} className="text-xs border-b border-stone-100 pb-1">
+                  <div
+                    key={user.id}
+                    className="text-xs border-b border-stone-100 pb-1"
+                  >
                     <div className="font-medium">{user.name}</div>
-                    <div className="text-stone-500">{user.email} ({user.role})</div>
+                    <div className="text-stone-500">
+                      {user.email} ({user.role})
+                    </div>
                   </div>
                 ))}
               </div>
@@ -300,7 +318,7 @@ export function TestUserCreator() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 // Auto-show in development if not in production build
@@ -310,5 +328,5 @@ export function DevToolsProvider({ children }: { children: React.ReactNode }) {
       {children}
       <TestUserCreator />
     </>
-  )
-} 
+  );
+}

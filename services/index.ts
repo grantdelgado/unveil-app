@@ -1,14 +1,14 @@
 // Export service modules individually to avoid naming conflicts
-export * as AuthService from './auth'
-export * as EventsService from './events'
-export * as ParticipantsService from './guests'
-export * as MediaService from './media'
-export * as MessagingService from './messaging'
-export * as StorageService from './storage'
-export * as UsersService from './users'
+export * as AuthService from './auth';
+export * as EventsService from './events';
+export * as ParticipantsService from './guests';
+export * as MediaService from './media';
+export * as MessagingService from './messaging';
+export * as StorageService from './storage';
+export * as UsersService from './users';
 
 // Authentication exports (OTP-based)
-export { 
+export {
   getCurrentUser,
   getCurrentSession,
   getCurrentUserProfile,
@@ -20,11 +20,11 @@ export {
   checkOTPRateLimit,
   recordOTPAttempt,
   clearOTPRateLimit,
-  OTP_RATE_LIMITING
-} from './auth'
+  OTP_RATE_LIMITING,
+} from './auth';
 
 // Events exports
-export { 
+export {
   getEventsByUser,
   getEventById,
   getHostEvents,
@@ -40,8 +40,8 @@ export {
   updateParticipantRSVP,
   removeParticipantFromEvent,
   updateParticipantRole,
-  getEventStats
-} from './events'
+  getEventStats,
+} from './events';
 
 // Guest/Participant management exports (no duplicates with events)
 export {
@@ -49,17 +49,15 @@ export {
   removeParticipant,
   importParticipants,
   getParticipantsByRole,
-  getEventGuests,
   inviteGuest,
-  updateGuestRSVP,
   removeGuest,
   bulkInviteGuests,
   getGuestsByTags,
-  getGuestStats
-} from './guests'
+  getGuestStats,
+} from './guests';
 
 // Media exports
-export { 
+export {
   getEventMedia,
   uploadMedia,
   updateMediaCaption,
@@ -71,37 +69,30 @@ export {
   validateFileSize,
   validateFileType,
   validateMediaFile,
-  MEDIA_CONSTRAINTS
-} from './media'
+  MEDIA_CONSTRAINTS,
+} from './media';
 
 // Messaging exports
-export { 
-  getEventMessages,
-  sendMessage,
-  getMessageThread,
-  markMessageAsRead,
-  getUnreadMessageCount,
-  sendBulkMessage
-} from './messaging'
+export { getEventMessages, sendMessage, sendBulkMessage } from './messaging';
 
 // Storage exports
-export { 
+export {
   uploadFile,
   deleteFile,
-  getFileUrl,
-  getUploadUrl
-} from './storage'
+  getPublicUrl,
+  createSignedUrl,
+} from './storage';
 
 // Users exports (no duplicates with auth)
-export { 
+export {
   getUserById,
   getUserByPhone as getPhoneUser,
   createUser,
   updateUser,
   deleteUser,
   searchUsers,
-  getUsersWithRoles
-} from './users'
+  getUsersWithRoles,
+} from './users';
 
 // Type exports for external use
 export type {
@@ -121,5 +112,5 @@ export type {
   Event,
   EventParticipant,
   Media,
-  Message
-} from '@/lib/supabase/types' 
+  Message,
+} from '@/lib/supabase/types';

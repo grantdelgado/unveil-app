@@ -1,65 +1,68 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { getCurrentUserProfile } from '@/services/auth'
-import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import type { User } from '@/lib/supabase/types'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUserProfile } from '@/services/auth';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import type { User } from '@/lib/supabase/types';
 
 export default function AccountSetupPage() {
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [userProfile, setUserProfile] = useState<User | null>(null)
-  const router = useRouter()
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const loadUserProfile = async () => {
       try {
-        const { data: profile, error } = await getCurrentUserProfile()
-        
+        const { data: profile, error } = await getCurrentUserProfile();
+
         if (error || !profile) {
-          console.error('Failed to load user profile:', error)
-          router.push('/login')
-          return
+          console.error('Failed to load user profile:', error);
+          router.push('/login');
+          return;
         }
 
-        setUserProfile(profile)
-        
+        setUserProfile(profile);
+
         // Pre-fill form if user already has some data
-        if (profile.full_name && profile.full_name !== `User ${profile.phone?.slice(-4)}`) {
-          setFullName(profile.full_name)
+        if (
+          profile.full_name &&
+          profile.full_name !== `User ${profile.phone?.slice(-4)}`
+        ) {
+          setFullName(profile.full_name);
         }
         if (profile.email) {
-          setEmail(profile.email)
+          setEmail(profile.email);
         }
       } catch (err) {
-        console.error('Error loading profile:', err)
-        router.push('/login')
+        console.error('Error loading profile:', err);
+        router.push('/login');
       }
-    }
+    };
 
-    loadUserProfile()
-  }, [router])
+    loadUserProfile();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
 
     if (!fullName.trim()) {
-      setError('Please enter your full name')
-      return
+      setError('Please enter your full name');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
       if (!userProfile?.id) {
-        setError('User profile not found. Please try logging in again.')
-        return
+        setError('User profile not found. Please try logging in again.');
+        return;
       }
 
       // Update user profile
@@ -67,33 +70,32 @@ export default function AccountSetupPage() {
         .from('users')
         .update({
           full_name: fullName.trim(),
-          email: email.trim() || null
+          email: email.trim() || null,
         })
-        .eq('id', userProfile.id)
+        .eq('id', userProfile.id);
 
       if (updateError) {
-        console.error('Failed to update profile:', updateError)
-        setError('Failed to save your information. Please try again.')
-        return
+        console.error('Failed to update profile:', updateError);
+        setError('Failed to save your information. Please try again.');
+        return;
       }
 
-      console.log('✅ Profile setup completed')
-      
+      console.log('✅ Profile setup completed');
+
       // Redirect to select-event page
-      router.push('/select-event')
-      
+      router.push('/select-event');
     } catch (err) {
-      console.error('Setup error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      console.error('Setup error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSkip = () => {
     // Allow users to skip setup and go directly to events
-    router.push('/select-event')
-  }
+    router.push('/select-event');
+  };
 
   if (!userProfile) {
     return (
@@ -103,15 +105,17 @@ export default function AccountSetupPage() {
           <p className="text-gray-600">Loading your account...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-purple-50 flex items-center justify-center p-4">
-              <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
+      <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">👋</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Unveil!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome to Unveil!
+          </h1>
           <p className="text-gray-600">
             Let&apos;s set up your account to get started
           </p>
@@ -172,9 +176,11 @@ export default function AccountSetupPage() {
 
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>Phone: {userProfile.phone}</p>
-          <p className="mt-1">You can update this information later in your profile</p>
+          <p className="mt-1">
+            You can update this information later in your profile
+          </p>
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

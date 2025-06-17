@@ -1,199 +1,205 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { logAuth, logAuthError, logDev } from '@/lib/logger'
-import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services/auth'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { logAuth, logAuthError, logDev } from '@/lib/logger';
+import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services/auth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 // Login flow steps
-type LoginStep = 'phone' | 'otp'
+type LoginStep = 'phone' | 'otp';
 
 export default function LoginPage() {
-  const [step, setStep] = useState<LoginStep>('phone')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isDev, setIsDev] = useState(false)
-  const router = useRouter()
+  const [step, setStep] = useState<LoginStep>('phone');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isDev, setIsDev] = useState(false);
+  const router = useRouter();
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Clear previous errors
-    setError('')
-    
+    setError('');
+
     // Validate phone number
-    const validation = validatePhoneNumber(phone)
+    const validation = validatePhoneNumber(phone);
     if (!validation.isValid) {
-      setError(validation.error || 'Invalid phone number')
-      return
+      setError(validation.error || 'Invalid phone number');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      logAuth('Sending OTP to phone', { phone })
-      
-      const result = await sendOTP(phone)
-      
+      logAuth('Sending OTP to phone', { phone });
+
+      const result = await sendOTP(phone);
+
       if (result.success) {
         logAuth('OTP sent successfully', {
-          isDev: result.isDev
-        })
-        
+          isDev: result.isDev,
+        });
+
         if (result.isDev) {
           // Dev phone authenticated directly
           logDev('Development mode: Direct authentication successful', {
-            isNewUser: result.isNewUser
-          })
-          setError('') // Clear any previous errors
-          
+            isNewUser: result.isNewUser,
+          });
+          setError(''); // Clear any previous errors
+
           // For dev authentication, show a success message and let AuthSessionWatcher handle routing
           // Don't immediately clear loading state as we want to show "Authenticating..." until redirect
-          logDev('Waiting for AuthSessionWatcher to handle routing...')
-          
+          logDev('Waiting for AuthSessionWatcher to handle routing...');
+
           // Force redirect after a short delay as a fallback
           setTimeout(() => {
-            logDev('3-second timeout reached, forcing redirect to /select-event')
-            router.replace('/select-event')
-            setLoading(false)
-          }, 3000) // 3 second timeout
-          
-          return
+            logDev(
+              '3-second timeout reached, forcing redirect to /select-event',
+            );
+            router.replace('/select-event');
+            setLoading(false);
+          }, 3000); // 3 second timeout
+
+          return;
         }
-        
+
         // Regular flow - show OTP input
-        setIsDev(result.isDev)
-        setStep('otp')
-        setLoading(false) // Only clear loading for regular OTP flow
+        setIsDev(result.isDev);
+        setStep('otp');
+        setLoading(false); // Only clear loading for regular OTP flow
       } else {
-        logAuthError('Failed to send OTP', result.error)
-        
+        logAuthError('Failed to send OTP', result.error);
+
         // Better error messages for development mode
-        let errorMessage = result.error || 'Failed to send verification code. Please try again.'
-        
+        let errorMessage =
+          result.error || 'Failed to send verification code. Please try again.';
+
         if (result.isDev && result.error?.includes('Database error')) {
-          errorMessage = 'Development authentication failed. Please check your Supabase configuration.'
+          errorMessage =
+            'Development authentication failed. Please check your Supabase configuration.';
         } else if (result.isDev) {
-          errorMessage = `Development authentication error: ${result.error}`
+          errorMessage = `Development authentication error: ${result.error}`;
         }
-        
-        setError(errorMessage)
-        setLoading(false)
+
+        setError(errorMessage);
+        setLoading(false);
       }
     } catch (err) {
-      logAuthError('Unexpected OTP send error', err)
-      setError('An unexpected error occurred. Please try again.')
-      setLoading(false)
+      logAuthError('Unexpected OTP send error', err);
+      setError('An unexpected error occurred. Please try again.');
+      setLoading(false);
     }
-  }
+  };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Clear previous errors
-    setError('')
-    
+    setError('');
+
     // Validate OTP format
     if (!/^\d{6}$/.test(otp)) {
-      setError('Please enter a 6-digit verification code')
-      return
+      setError('Please enter a 6-digit verification code');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      logAuth('Verifying OTP for phone', { phone })
-      
-      const result = await verifyOTP(phone, otp)
-      
+      logAuth('Verifying OTP for phone', { phone });
+
+      const result = await verifyOTP(phone, otp);
+
       if (result.success) {
         logAuth('Authentication successful', {
           userId: result.userId,
-          isNewUser: result.isNewUser
-        })
-        
+          isNewUser: result.isNewUser,
+        });
+
         // Success - route based on user status
         if (result.isNewUser) {
-          router.push('/setup')
+          router.push('/setup');
         } else {
-          router.push('/select-event')
+          router.push('/select-event');
         }
       } else {
-        logAuthError('OTP verification failed', result.error)
-        setError(result.error || 'Invalid verification code. Please try again.')
+        logAuthError('OTP verification failed', result.error);
+        setError(
+          result.error || 'Invalid verification code. Please try again.',
+        );
       }
     } catch (err) {
-      logAuthError('Unexpected OTP verification error', err)
-      setError('An unexpected error occurred. Please try again.')
+      logAuthError('Unexpected OTP verification error', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleBackToPhone = () => {
-    setStep('phone')
-    setOtp('')
-    setError('')
-    setIsDev(false)
-  }
+    setStep('phone');
+    setOtp('');
+    setError('');
+    setIsDev(false);
+  };
 
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digits
-    const cleaned = value.replace(/\D/g, '')
-    
+    const cleaned = value.replace(/\D/g, '');
+
     // Format as (XXX) XXX-XXXX for US numbers
     if (cleaned.length >= 10) {
-      const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})/)
+      const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})/);
       if (match) {
-        return `(${match[1]}) ${match[2]}-${match[3]}`
+        return `(${match[1]}) ${match[2]}-${match[3]}`;
       }
     }
-    
+
     // For shorter numbers, just return the digits
     if (cleaned.length >= 6) {
-      const match = cleaned.match(/^(\d{3})(\d{0,3})(\d{0,4})/)
+      const match = cleaned.match(/^(\d{3})(\d{0,3})(\d{0,4})/);
       if (match) {
-        let formatted = `(${match[1]})`
-        if (match[2]) formatted += ` ${match[2]}`
-        if (match[3]) formatted += `-${match[3]}`
-        return formatted
+        let formatted = `(${match[1]})`;
+        if (match[2]) formatted += ` ${match[2]}`;
+        if (match[3]) formatted += `-${match[3]}`;
+        return formatted;
       }
     }
-    
-    return cleaned
-  }
+
+    return cleaned;
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value)
-    setPhone(formatted)
-    
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+
     // Clear error when user starts typing
-    if (error) setError('')
-  }
+    if (error) setError('');
+  };
 
   const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6) // Only digits, max 6
-    setOtp(value)
-    
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only digits, max 6
+    setOtp(value);
+
     // Clear error when user starts typing
-    if (error) setError('')
-  }
+    if (error) setError('');
+  };
 
   return (
     <div className="min-h-screen bg-app flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
         <div className="text-center mb-8">
           <div className="text-4xl mb-4">💍</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Unveil</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome to Unveil
+          </h1>
           {step === 'phone' ? (
-            <p className="text-gray-600">
-              Enter your phone number to continue
-            </p>
+            <p className="text-gray-600">Enter your phone number to continue</p>
           ) : (
             <div>
               <p className="text-gray-600 mb-2">
@@ -257,7 +263,8 @@ export default function LoginPage() {
 
             {isDev && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-                <strong>Development Mode:</strong> Enter any 6-digit code to continue
+                <strong>Development Mode:</strong> Enter any 6-digit code to
+                continue
               </div>
             )}
 
@@ -289,20 +296,25 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center text-sm text-gray-500">
           {step === 'phone' ? (
-            <p>New to Unveil? Don&apos;t worry - we&apos;ll create your account automatically.</p>
+            <p>
+              New to Unveil? Don&apos;t worry - we&apos;ll create your account
+              automatically.
+            </p>
           ) : (
             <p>Didn&apos;t receive a code? Wait 60 seconds and try again.</p>
           )}
         </div>
-        
+
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-            <strong>Development Mode:</strong> Using phone-based OTP authentication
+            <strong>Development Mode:</strong> Using phone-based OTP
+            authentication
             <br />
-            <strong>Test phones:</strong> +15550000001, +15550000002, +15550000003
+            <strong>Test phones:</strong> +15550000001, +15550000002,
+            +15550000003
           </div>
         )}
       </div>
     </div>
-  )
-} 
+  );
+}

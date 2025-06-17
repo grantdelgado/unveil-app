@@ -1,37 +1,44 @@
-import React from 'react'
-import { cn } from '@/lib/utils'
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'
-  size?: 'sm' | 'md' | 'lg'
-  isLoading?: boolean
-  children: React.ReactNode
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  children: React.ReactNode;
 }
 
 const buttonVariants = {
   primary: 'bg-stone-800 text-white hover:bg-stone-900 focus:ring-stone-500',
-  secondary: 'bg-stone-100 text-stone-900 hover:bg-stone-200 focus:ring-stone-300',
-  outline: 'border border-stone-300 bg-transparent text-stone-700 hover:bg-stone-50 focus:ring-stone-300',
-  ghost: 'bg-transparent text-stone-700 hover:bg-stone-100 focus:ring-stone-300',
+  secondary:
+    'bg-stone-100 text-stone-900 hover:bg-stone-200 focus:ring-stone-300',
+  outline:
+    'border border-stone-300 bg-transparent text-stone-700 hover:bg-stone-50 focus:ring-stone-300',
+  ghost:
+    'bg-transparent text-stone-700 hover:bg-stone-100 focus:ring-stone-300',
   destructive: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-}
+};
 
 const buttonSizes = {
   sm: 'px-3 py-2 text-sm',
   md: 'px-4 py-3 text-base',
   lg: 'px-6 py-4 text-lg',
-}
+};
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ 
-    className, 
-    variant = 'primary', 
-    size = 'md', 
-    isLoading = false, 
-    disabled,
-    children, 
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      variant = 'primary',
+      size = 'md',
+      isLoading = false,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <button
         className={cn(
@@ -44,7 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           buttonVariants[variant],
           // Size styles
           buttonSizes[size],
-          className
+          className,
         )}
         disabled={disabled || isLoading}
         ref={ref}
@@ -55,8 +62,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {children}
       </button>
-    )
-  }
-)
+    );
+  },
+);
 
-Button.displayName = 'Button' 
+Button.displayName = 'Button';

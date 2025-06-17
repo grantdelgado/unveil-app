@@ -1,2 +1,2 @@
 // Messaging Components
-export { default as GuestMessaging } from './GuestMessaging' 
+export { default as GuestMessaging } from './GuestMessaging';

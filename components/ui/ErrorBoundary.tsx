@@ -1,43 +1,46 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { Button } from './Button'
-import { logError } from '@/lib/error-handling'
+import React from 'react';
+import { Button } from './Button';
+import { logError } from '@/lib/error-handling';
 
 interface ErrorBoundaryState {
-  hasError: boolean
-  error?: Error
+  hasError: boolean;
+  error?: Error;
 }
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode
-  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false }
+    super(props);
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     if (error && typeof error === 'object' && error.message) {
-      logError(error, 'React Error Boundary')
+      logError(error, 'React Error Boundary');
     } else {
-      const properError = new Error(`ErrorBoundary caught: ${String(error)}`)
-      logError(properError, 'React Error Boundary')
+      const properError = new Error(`ErrorBoundary caught: ${String(error)}`);
+      logError(properError, 'React Error Boundary');
     }
-    this.props.onError?.(error, errorInfo)
+    this.props.onError?.(error, errorInfo);
   }
 
   resetError = () => {
-    this.setState({ hasError: false, error: undefined })
-  }
+    this.setState({ hasError: false, error: undefined });
+  };
 
   render() {
     if (this.state.hasError && this.state.error) {
@@ -45,23 +48,31 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         return React.createElement(this.props.fallback, {
           error: this.state.error,
           resetError: this.resetError,
-        })
+        });
       }
 
-      return <DefaultErrorFallback error={this.state.error} resetError={this.resetError} />
+      return (
+        <DefaultErrorFallback
+          error={this.state.error}
+          resetError={this.resetError}
+        />
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
 interface ErrorFallbackProps {
-  error: Error
-  resetError: () => void
+  error: Error;
+  resetError: () => void;
 }
 
-export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError }) => {
-    return (
+export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
+  error,
+  resetError,
+}) => {
+  return (
     <div className="min-h-screen bg-app flex items-center justify-center p-6">
       <div className="max-w-md w-full">
         <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 text-center">
@@ -80,15 +91,16 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, rese
               />
             </svg>
           </div>
-          
+
           <h1 className="text-xl font-semibold text-stone-800 mb-2">
             Something went wrong
           </h1>
-          
+
           <p className="text-stone-600 mb-6">
-            We&apos;re sorry, but something unexpected happened. Please try again.
+            We&apos;re sorry, but something unexpected happened. Please try
+            again.
           </p>
-          
+
           {process.env.NODE_ENV === 'development' && (
             <details className="text-left mb-6 p-4 bg-stone-50 rounded-lg">
               <summary className="cursor-pointer text-sm font-medium text-stone-700 mb-2">
@@ -100,15 +112,15 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, rese
               </pre>
             </details>
           )}
-          
+
           <div className="space-y-3">
             <Button onClick={resetError} className="w-full">
               Try Again
             </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.reload()} 
+
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
               className="w-full"
             >
               Reload Page
@@ -117,10 +129,12 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, rese
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export const CardErrorFallback: React.FC<ErrorFallbackProps> = ({ resetError }) => {
+export const CardErrorFallback: React.FC<ErrorFallbackProps> = ({
+  resetError,
+}) => {
   return (
     <div className="bg-app rounded-xl shadow-sm border border-red-200 p-6">
       <div className="text-center">
@@ -139,19 +153,19 @@ export const CardErrorFallback: React.FC<ErrorFallbackProps> = ({ resetError }) 
             />
           </svg>
         </div>
-        
+
         <h3 className="text-lg font-medium text-stone-800 mb-2">
           Unable to load content
         </h3>
-        
+
         <p className="text-stone-600 mb-4">
           Something went wrong while loading this section.
         </p>
-        
+
         <Button onClick={resetError} size="sm">
           Try Again
         </Button>
       </div>
     </div>
-  )
-} 
+  );
+};

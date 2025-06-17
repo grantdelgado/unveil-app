@@ -5,19 +5,22 @@ This directory contains scripts to create comprehensive test data for your Unvei
 ## 🎯 What Test Data Is Created
 
 ### Test Users
+
 - **Alice Smith** - Host (Wedding)
-- **Bob Johnson** - Host (Birthday Party) 
+- **Bob Johnson** - Host (Birthday Party)
 - **Carol Davis** - Guest/Family member
 - **David Wilson** - Guest/Friend
 - **Emma Brown** - Host (Baby Shower)
 
 ### Test Events
+
 - **Alice & Michael's Wedding** - Multi-day wedding with sub-events
 - **Bob's 30th Birthday Bash** - Public birthday party
 - **Emma's Baby Shower** - Private baby shower
 - **Your Test Event** _(if you're authenticated)_ - Event you host with guests
 
 ### Realistic Scenarios
+
 - **Guest Experience**: You'll be invited to other people's events
 - **Host Experience**: You'll have your own event with guests
 - **Various RSVP statuses**: Attending, Maybe, Declined, Pending
@@ -61,6 +64,7 @@ If you prefer to run SQL directly in Supabase:
 After running the scripts, you can test:
 
 ### As a Guest 👤
+
 - View Alice's Wedding invitation and RSVP
 - See sub-events (rehearsal, ceremony, reception, etc.)
 - Join Bob's Birthday Party (public event)
@@ -68,12 +72,14 @@ After running the scripts, you can test:
 - Upload photos to events
 
 ### As a Host 🎭
-- Manage your own "Test Event" 
+
+- Manage your own "Test Event"
 - See your guest list and RSVP statuses
 - Send messages to different guest groups
 - View event analytics and engagement
 
 ### Edge Cases 🔍
+
 - Guests without app accounts (SMS-only)
 - Different RSVP statuses (attending, maybe, declined)
 - Public vs private events
@@ -94,6 +100,7 @@ npx tsx scripts/seed-test-data.ts --clean
 ## 🔧 Customization
 
 You can modify the scripts to:
+
 - Add more test users or events
 - Change event dates to match your testing timeline
 - Adjust guest relationships and RSVP patterns
@@ -104,12 +111,14 @@ You can modify the scripts to:
 For reference, here are the consistent IDs used:
 
 **Events:**
+
 - Alice's Wedding: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`
 - Bob's Birthday: `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`
 - Emma's Baby Shower: `eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee`
 - Your Test Event: `cccccccc-cccc-cccc-cccc-cccccccccccc`
 
 **Users:**
+
 - Alice: `11111111-1111-1111-1111-111111111111`
 - Bob: `22222222-2222-2222-2222-222222222222`
 - Carol: `33333333-3333-3333-3333-333333333333`
@@ -119,15 +128,19 @@ For reference, here are the consistent IDs used:
 ## 🐛 Troubleshooting
 
 **"Missing Supabase environment variables"**
+
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in `.env.local`
 
 **"RLS policy violations"**
+
 - Some data might not appear due to Row Level Security. This is expected behavior!
 - Test users might need to authenticate through your app's normal flow
 
 **"Foreign key constraint errors"**
+
 - Run with `--clean` flag first to remove any existing conflicting data
 
 **"No personalized data created"**
+
 - Make sure you're logged into your app before running the TypeScript script
-- The script creates generic test data if no user is authenticated 
+- The script creates generic test data if no user is authenticated

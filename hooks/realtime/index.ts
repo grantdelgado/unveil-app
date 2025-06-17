@@ -1,6 +1,6 @@
-export { 
-  useRealtimeSubscription, 
+export {
+  useRealtimeSubscription,
   useEventSubscription,
   type UseRealtimeSubscriptionOptions,
-  type UseRealtimeSubscriptionReturn
-} from './useRealtimeSubscription' 
+  type UseRealtimeSubscriptionReturn,
+} from './useRealtimeSubscription';

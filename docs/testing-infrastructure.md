@@ -65,12 +65,13 @@ Test individual functions and utilities:
 // Example: lib/validations.test.ts
 describe('Phone Validation', () => {
   it('should format phone numbers correctly', () => {
-    expect(validatePhoneNumber('4155552368')).toBe('+14155552368')
-  })
-})
+    expect(validatePhoneNumber('4155552368')).toBe('+14155552368');
+  });
+});
 ```
 
 **Coverage areas:**
+
 - ✅ Data validation (Zod schemas)
 - ✅ Utility functions
 - ✅ Business logic
@@ -91,6 +92,7 @@ describe('EventCard', () => {
 ```
 
 **Coverage areas:**
+
 - ✅ React components
 - ✅ Custom hooks
 - ✅ API interactions (mocked)
@@ -104,14 +106,19 @@ Test Row Level Security policies and database functions:
 // Example: scripts/test-rls-policies.ts
 describe('Event Access Policies', () => {
   it('should allow hosts to access their events', async () => {
-    await switchUser('host@example.com')
-    const event = await supabase.from('events').select('*').eq('id', eventId).single()
-    expect(event.error).toBeNull()
-  })
-})
+    await switchUser('host@example.com');
+    const event = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .single();
+    expect(event.error).toBeNull();
+  });
+});
 ```
 
 **Coverage areas:**
+
 - ✅ RLS policy enforcement
 - ✅ Database functions
 - ✅ Permission boundaries
@@ -124,13 +131,14 @@ Test complete user journeys:
 ```typescript
 // Example: playwright-tests/auth-flow.spec.ts
 test('guest can RSVP to wedding', async ({ page }) => {
-  await page.goto('/events/alice-wedding')
-  await page.click('[data-testid="rsvp-attending"]')
-  await expect(page.locator('[data-testid="rsvp-success"]')).toBeVisible()
-})
+  await page.goto('/events/alice-wedding');
+  await page.click('[data-testid="rsvp-attending"]');
+  await expect(page.locator('[data-testid="rsvp-success"]')).toBeVisible();
+});
 ```
 
 **Coverage areas:**
+
 - ✅ Authentication flows
 - ✅ Host dashboard features
 - ✅ Guest RSVP experience
@@ -201,30 +209,30 @@ npx tsx scripts/seed-test-data.ts --clean
 ```typescript
 // Host can create events
 test('host creates wedding event', async ({ page }) => {
-  await signInAsHost(page)
-  await page.goto('/host/events/new')
-  await page.fill('[name="title"]', 'Sarah & Mike\'s Wedding')
-  await page.fill('[name="date"]', '2024-08-15')
-  await page.click('[type="submit"]')
-  await expect(page.locator('text=Event created successfully')).toBeVisible()
-})
+  await signInAsHost(page);
+  await page.goto('/host/events/new');
+  await page.fill('[name="title"]', "Sarah & Mike's Wedding");
+  await page.fill('[name="date"]', '2024-08-15');
+  await page.click('[type="submit"]');
+  await expect(page.locator('text=Event created successfully')).toBeVisible();
+});
 
 // Host can manage guest list
 test('host imports guest list', async ({ page }) => {
-  await signInAsHost(page)
-  await page.goto('/host/events/wedding-123/guests')
-  await page.setInputFiles('[data-testid="csv-upload"]', 'test-guests.csv')
-  await expect(page.locator('text=25 guests imported')).toBeVisible()
-})
+  await signInAsHost(page);
+  await page.goto('/host/events/wedding-123/guests');
+  await page.setInputFiles('[data-testid="csv-upload"]', 'test-guests.csv');
+  await expect(page.locator('text=25 guests imported')).toBeVisible();
+});
 
 // Host can send messages
 test('host sends announcement', async ({ page }) => {
-  await signInAsHost(page)
-  await page.goto('/host/events/wedding-123/messages')
-  await page.fill('[name="content"]', 'Welcome to our wedding celebration!')
-  await page.click('[data-testid="send-message"]')
-  await expect(page.locator('text=Message sent to 25 guests')).toBeVisible()
-})
+  await signInAsHost(page);
+  await page.goto('/host/events/wedding-123/messages');
+  await page.fill('[name="content"]', 'Welcome to our wedding celebration!');
+  await page.click('[data-testid="send-message"]');
+  await expect(page.locator('text=Message sent to 25 guests')).toBeVisible();
+});
 ```
 
 ### Guest Experience Testing
@@ -232,22 +240,22 @@ test('host sends announcement', async ({ page }) => {
 ```typescript
 // Guest can RSVP
 test('guest responds to wedding invitation', async ({ page }) => {
-  await page.goto('/events/wedding-123?token=guest-token')
-  await page.click('[data-testid="rsvp-attending"]')
-  await page.fill('[name="dietary-restrictions"]', 'Vegetarian')
-  await page.click('[data-testid="submit-rsvp"]')
-  await expect(page.locator('text=RSVP submitted')).toBeVisible()
-})
+  await page.goto('/events/wedding-123?token=guest-token');
+  await page.click('[data-testid="rsvp-attending"]');
+  await page.fill('[name="dietary-restrictions"]', 'Vegetarian');
+  await page.click('[data-testid="submit-rsvp"]');
+  await expect(page.locator('text=RSVP submitted')).toBeVisible();
+});
 
 // Guest can upload photos
 test('guest uploads wedding photos', async ({ page }) => {
-  await signInAsGuest(page)
-  await page.goto('/events/wedding-123/photos')
-  await page.setInputFiles('[data-testid="photo-upload"]', 'wedding-photo.jpg')
-  await page.fill('[name="caption"]', 'Beautiful ceremony!')
-  await page.click('[data-testid="upload-photo"]')
-  await expect(page.locator('text=Photo uploaded')).toBeVisible()
-})
+  await signInAsGuest(page);
+  await page.goto('/events/wedding-123/photos');
+  await page.setInputFiles('[data-testid="photo-upload"]', 'wedding-photo.jpg');
+  await page.fill('[name="caption"]', 'Beautiful ceremony!');
+  await page.click('[data-testid="upload-photo"]');
+  await expect(page.locator('text=Photo uploaded')).toBeVisible();
+});
 ```
 
 ### Security Testing
@@ -255,16 +263,16 @@ test('guest uploads wedding photos', async ({ page }) => {
 ```typescript
 // Unauthorized access prevention
 test('unauthorized user cannot access private event', async ({ page }) => {
-  await page.goto('/events/private-wedding-123')
-  await expect(page.locator('text=Access denied')).toBeVisible()
-})
+  await page.goto('/events/private-wedding-123');
+  await expect(page.locator('text=Access denied')).toBeVisible();
+});
 
 // RLS policy enforcement
 test('guest cannot see other events', async ({ page }) => {
-  await signInAsGuest(page, 'guest@wedding-a.com')
-  await page.goto('/events/wedding-b')
-  await expect(page.locator('text=Event not found')).toBeVisible()
-})
+  await signInAsGuest(page, 'guest@wedding-a.com');
+  await page.goto('/events/wedding-b');
+  await expect(page.locator('text=Event not found')).toBeVisible();
+});
 ```
 
 ## 📊 Test Coverage Goals
@@ -291,28 +299,31 @@ open coverage/index.html
 ### Common Issues
 
 1. **Supabase Connection Errors**
+
    ```bash
    # Check Supabase status
    supabase status
-   
+
    # Restart local instance
    supabase stop && supabase start
    ```
 
 2. **Test Database State**
+
    ```bash
    # Reset test database
    npm run db:test
-   
+
    # Check current state
    npx tsx scripts/check-database-state.ts
    ```
 
 3. **RLS Policy Failures**
+
    ```bash
    # Run specific RLS test
    npm run test:rls
-   
+
    # Check policies in Supabase dashboard
    open https://app.supabase.com/project/your-project/auth/policies
    ```
@@ -322,10 +333,10 @@ open coverage/index.html
 ```typescript
 // Add debugging to tests
 test('debug failing test', async ({ page }) => {
-  await page.pause() // Pause execution
-  await page.screenshot({ path: 'debug.png' }) // Take screenshot
-  console.log(await page.content()) // Log page content
-})
+  await page.pause(); // Pause execution
+  await page.screenshot({ path: 'debug.png' }); // Take screenshot
+  console.log(await page.content()); // Log page content
+});
 ```
 
 ## 🏆 Best Practices
@@ -333,65 +344,70 @@ test('debug failing test', async ({ page }) => {
 ### Writing Tests
 
 1. **Follow AAA Pattern**
+
    ```typescript
    test('should validate phone number', () => {
      // Arrange
-     const phoneNumber = '4155552368'
-     
+     const phoneNumber = '4155552368';
+
      // Act
-     const result = validatePhoneNumber(phoneNumber)
-     
+     const result = validatePhoneNumber(phoneNumber);
+
      // Assert
-     expect(result).toBe('+14155552368')
-   })
+     expect(result).toBe('+14155552368');
+   });
    ```
 
 2. **Use Descriptive Test Names**
+
    ```typescript
    // ❌ Bad
-   test('phone validation', () => {})
-   
+   test('phone validation', () => {});
+
    // ✅ Good
-   test('should format US phone number with country code', () => {})
+   test('should format US phone number with country code', () => {});
    ```
 
 3. **Test Edge Cases**
    ```typescript
    describe('Guest RSVP', () => {
-     it('should handle valid RSVP', () => {})
-     it('should reject invalid RSVP status', () => {})
-     it('should handle missing guest information', () => {})
-     it('should prevent duplicate RSVPs', () => {})
-   })
+     it('should handle valid RSVP', () => {});
+     it('should reject invalid RSVP status', () => {});
+     it('should handle missing guest information', () => {});
+     it('should prevent duplicate RSVPs', () => {});
+   });
    ```
 
 ### E2E Testing
 
 1. **Use Data Test IDs**
+
    ```jsx
    <button data-testid="rsvp-attending">I'm Attending</button>
    ```
 
 2. **Create Reusable Page Objects**
+
    ```typescript
    class EventPage {
      constructor(private page: Page) {}
-     
+
      async rsvpAttending() {
-       await this.page.click('[data-testid="rsvp-attending"]')
+       await this.page.click('[data-testid="rsvp-attending"]');
      }
    }
    ```
 
 3. **Isolate Test Data**
+
    ```typescript
    test.beforeEach(async () => {
-     await seedTestData()
-   })
-   
+     await seedTestData();
+   });
+
    test.afterEach(async () => {
-     await cleanupTestData()
-   })
+     await cleanupTestData();
+   });
    ```
 
 ## 📈 Monitoring & Alerts
@@ -408,11 +424,11 @@ test('debug failing test', async ({ page }) => {
 ```typescript
 // Performance benchmarks
 test('page load performance', async ({ page }) => {
-  const startTime = Date.now()
-  await page.goto('/events/wedding-123')
-  const loadTime = Date.now() - startTime
-  expect(loadTime).toBeLessThan(3000) // 3 second max
-})
+  const startTime = Date.now();
+  await page.goto('/events/wedding-123');
+  const loadTime = Date.now() - startTime;
+  expect(loadTime).toBeLessThan(3000); // 3 second max
+});
 ```
 
 ## 🎯 Next Steps
@@ -420,11 +436,13 @@ test('page load performance', async ({ page }) => {
 ### Immediate Actions
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Run Initial Tests**
+
    ```bash
    npm run test
    npm run test:e2e
@@ -456,4 +474,4 @@ When adding new features:
 
 ---
 
-*This testing infrastructure ensures the Unveil app is reliable, secure, and performant for all users.* 
+_This testing infrastructure ensures the Unveil app is reliable, secure, and performant for all users._

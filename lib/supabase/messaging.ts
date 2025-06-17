@@ -1,34 +1,32 @@
-import { supabase } from './client'
-import type { MessageInsert } from './types'
+import { supabase } from './client';
+import type { MessageInsert } from './types';
 
 // Message database helpers
 export const getEventMessages = async (eventId: string) => {
   return await supabase
     .from('messages')
-    .select(`
+    .select(
+      `
       *,
       sender:public_user_profiles!messages_sender_user_id_fkey(*)
-    `)
+    `,
+    )
     .eq('event_id', eventId)
-    .order('created_at', { ascending: true })
-}
+    .order('created_at', { ascending: true });
+};
 
 export const createMessage = async (messageData: MessageInsert) => {
-  return await supabase
-    .from('messages')
-    .insert(messageData)
-    .select()
-    .single()
-}
+  return await supabase.from('messages').insert(messageData).select().single();
+};
 
 // Real-time subscription for messages
 export const subscribeToEventMessages = (
   eventId: string,
-  callback: (payload: { 
-    eventType: 'INSERT' | 'UPDATE' | 'DELETE'
-    new: Record<string, unknown>
-    old: Record<string, unknown>
-  }) => void
+  callback: (payload: {
+    eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+    new: Record<string, unknown>;
+    old: Record<string, unknown>;
+  }) => void,
 ) => {
   return supabase
     .channel(`event-messages-${eventId}`)
@@ -40,7 +38,7 @@ export const subscribeToEventMessages = (
         table: 'messages',
         filter: `event_id=eq.${eventId}`,
       },
-      callback
+      callback,
     )
-    .subscribe()
-} 
+    .subscribe();
+};

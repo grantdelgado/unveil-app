@@ -1,59 +1,61 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function ProfilePage() {
-  const [email, setEmail] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasHostedEvents, setHasHostedEvents] = useState(false)
+  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasHostedEvents, setHasHostedEvents] = useState(false);
 
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       const {
         data: { user },
         error,
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
       if (error || !user) {
-        setMessage('Something went wrong loading your profile')
-        setIsLoading(false)
-        return
+        setMessage('Something went wrong loading your profile');
+        setIsLoading(false);
+        return;
       }
-      setEmail(user.email || '')
-      setDisplayName(user.user_metadata?.display_name || '')
-      
+      setEmail(user.email || '');
+      setDisplayName(user.user_metadata?.display_name || '');
+
       // Check if user has hosted events
       const { data: hostedEvents } = await supabase
         .from('events')
         .select('id')
-        .eq('host_user_id', user.id)
-      
-      setHasHostedEvents((hostedEvents?.length || 0) > 0)
-      setIsLoading(false)
-    }
-    fetchProfile()
-  }, [])
+        .eq('host_user_id', user.id);
+
+      setHasHostedEvents((hostedEvents?.length || 0) > 0);
+      setIsLoading(false);
+    };
+    fetchProfile();
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage('')
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
     // Update display name in user_metadata
-    const { error } = await supabase.auth.updateUser({ data: { display_name: displayName } })
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName },
+    });
     if (error) {
-      setMessage('Something went wrong. Please try again.')
+      setMessage('Something went wrong. Please try again.');
     } else {
-      setMessage('Profile updated successfully')
+      setMessage('Profile updated successfully');
     }
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-app">
@@ -78,13 +80,19 @@ export default function ProfilePage() {
                 <ellipse cx="12" cy="17" rx="7" ry="4" />
               </svg>
             </div>
-            <h1 className="text-3xl font-semibold text-stone-800 mb-2">Your Profile</h1>
-            <p className="text-stone-600">Manage your account settings and preferences</p>
+            <h1 className="text-3xl font-semibold text-stone-800 mb-2">
+              Your Profile
+            </h1>
+            <p className="text-stone-600">
+              Manage your account settings and preferences
+            </p>
           </div>
 
           <form onSubmit={handleUpdate} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Email Address
+              </label>
               <input
                 type="email"
                 value={email}
@@ -94,11 +102,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">Display Name</label>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Display Name
+              </label>
               <input
                 type="text"
                 value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
+                onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all"
                 placeholder="Enter your display name"
                 disabled={isLoading}
@@ -114,11 +124,13 @@ export default function ProfilePage() {
             </button>
 
             {message && (
-              <div className={`p-3 rounded-lg text-center text-sm ${
-                message.includes('wrong') 
-                  ? 'bg-red-50 text-red-700 border border-red-100' 
-                  : 'bg-green-50 text-green-700 border border-green-100'
-              }`}>
+              <div
+                className={`p-3 rounded-lg text-center text-sm ${
+                  message.includes('wrong')
+                    ? 'bg-red-50 text-red-700 border border-red-100'
+                    : 'bg-green-50 text-green-700 border border-green-100'
+                }`}
+              >
                 {message}
               </div>
             )}
@@ -128,10 +140,14 @@ export default function ProfilePage() {
         {/* Event Management Section */}
         <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-stone-800 mb-2">Event Management</h2>
-            <p className="text-stone-600">Create and manage your wedding events</p>
+            <h2 className="text-2xl font-semibold text-stone-800 mb-2">
+              Event Management
+            </h2>
+            <p className="text-stone-600">
+              Create and manage your wedding events
+            </p>
           </div>
-          
+
           <div className="space-y-4">
             {/* Create New Event Button */}
             <Link
@@ -146,7 +162,8 @@ export default function ProfilePage() {
             {hasHostedEvents && (
               <div className="pt-4 border-t border-stone-200">
                 <p className="text-sm text-stone-600 mb-4">
-                  You have hosted events. You can create additional events or manage existing ones.
+                  You have hosted events. You can create additional events or
+                  manage existing ones.
                 </p>
                 <Link
                   href="/host/events/create"
@@ -161,8 +178,10 @@ export default function ProfilePage() {
 
         {/* Account Actions */}
         <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8">
-          <h2 className="text-xl font-medium text-stone-800 mb-6">Account Actions</h2>
-          
+          <h2 className="text-xl font-medium text-stone-800 mb-6">
+            Account Actions
+          </h2>
+
           <div className="space-y-4">
             <button
               onClick={() => router.push('/select-event')}
@@ -170,16 +189,20 @@ export default function ProfilePage() {
             >
               View All Events
             </button>
-            
+
             <LogoutButtonStyled router={router} />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-function LogoutButtonStyled({ router }: { router: ReturnType<typeof useRouter> }) {
+function LogoutButtonStyled({
+  router,
+}: {
+  router: ReturnType<typeof useRouter>;
+}) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');

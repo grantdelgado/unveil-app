@@ -1,36 +1,36 @@
-'use client'
+'use client';
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 
 function ResetPasswordForm() {
-  const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const searchParams = useSearchParams()
-  const router = useRouter()
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     // Only redirect to login if access token is missing
     if (!searchParams.get('access_token')) {
-      router.replace('/login')
+      router.replace('/login');
     }
-  }, [searchParams, router])
+  }, [searchParams, router]);
 
   const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setMessage('')
-    const { error } = await supabase.auth.updateUser({ password })
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
+    const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      setMessage('Error updating password: ' + error.message)
+      setMessage('Error updating password: ' + error.message);
     } else {
-      setMessage('Password updated! You can now log in.')
-      setTimeout(() => router.replace('/login'), 2000)
+      setMessage('Password updated! You can now log in.');
+      setTimeout(() => router.replace('/login'), 2000);
     }
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   return (
     <form onSubmit={handleUpdate} className="p-4 max-w-md mx-auto">
@@ -38,7 +38,7 @@ function ResetPasswordForm() {
       <input
         type="password"
         value={password}
-        onChange={e => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
         placeholder="New password"
         className="border px-4 py-2 w-full rounded mb-2"
         required
@@ -53,7 +53,7 @@ function ResetPasswordForm() {
       </button>
       {message && <p className="mt-2 text-gray-600">{message}</p>}
     </form>
-  )
+  );
 }
 
 export default function ResetPasswordPage() {
@@ -61,5 +61,5 @@ export default function ResetPasswordPage() {
     <Suspense>
       <ResetPasswordForm />
     </Suspense>
-  )
-} 
+  );
+}

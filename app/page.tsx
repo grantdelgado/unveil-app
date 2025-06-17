@@ -1,25 +1,27 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 export default function HomePage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkSessionAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
-        router.replace('/select-event')
+        router.replace('/select-event');
       } else {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    checkSessionAndRedirect()
-  }, [router])
+    };
+    checkSessionAndRedirect();
+  }, [router]);
 
   if (loading) {
     return (
@@ -29,11 +31,11 @@ export default function HomePage() {
           <p className="text-stone-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-          <main className="min-h-screen bg-app flex flex-col items-center justify-center p-6">
+    <main className="min-h-screen bg-app flex flex-col items-center justify-center p-6">
       <div className="max-w-2xl mx-auto text-center">
         {/* Brand Logo/Wordmark */}
         <div className="mb-8">
@@ -49,7 +51,8 @@ export default function HomePage() {
             Focus on presence, not logistics
           </p>
           <p className="text-stone-600 max-w-lg mx-auto">
-            Streamline wedding communication and preserve shared memories in one elegant space.
+            Streamline wedding communication and preserve shared memories in one
+            elegant space.
           </p>
         </div>
 
@@ -62,5 +65,5 @@ export default function HomePage() {
         </Link>
       </div>
     </main>
-  )
+  );
 }

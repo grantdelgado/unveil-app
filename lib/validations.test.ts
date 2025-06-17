@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { 
+import { describe, it, expect } from 'vitest';
+import {
   emailSchema,
   eventCreateSchema,
   guestCreateSchema,
-  messageCreateSchema
-} from './validations'
+  messageCreateSchema,
+} from './validations';
 
 describe('Email Validation', () => {
   describe('emailSchema', () => {
@@ -12,13 +12,13 @@ describe('Email Validation', () => {
       const validEmails = [
         'test@example.com',
         'user.name@domain.co.uk',
-        'first+last@company.org'
-      ]
+        'first+last@company.org',
+      ];
 
-      validEmails.forEach(email => {
-        expect(() => emailSchema.parse(email)).not.toThrow()
-      })
-    })
+      validEmails.forEach((email) => {
+        expect(() => emailSchema.parse(email)).not.toThrow();
+      });
+    });
 
     it('should reject invalid email addresses', () => {
       const invalidEmails = [
@@ -26,52 +26,54 @@ describe('Email Validation', () => {
         'invalid-email',
         '@domain.com',
         'user@',
-        'user..name@domain.com'
-      ]
+        'user..name@domain.com',
+      ];
 
-      invalidEmails.forEach(email => {
-        expect(() => emailSchema.parse(email)).toThrow()
-      })
-    })
-  })
-})
+      invalidEmails.forEach((email) => {
+        expect(() => emailSchema.parse(email)).toThrow();
+      });
+    });
+  });
+});
 
 describe('Event Validation', () => {
   describe('eventCreateSchema', () => {
     it('should accept valid event data', () => {
       // Create a future date (tomorrow)
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
       const validEvent = {
         title: 'Wedding Celebration',
         event_date: tomorrow.toISOString(), // Future date
         location: 'Napa Valley, CA',
-        description: 'A beautiful wedding celebration'
-      }
+        description: 'A beautiful wedding celebration',
+      };
 
-      expect(() => eventCreateSchema.parse(validEvent)).not.toThrow()
-    })
+      expect(() => eventCreateSchema.parse(validEvent)).not.toThrow();
+    });
 
     it('should require title and event_date', () => {
       // Create a future date
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      
-      expect(() => eventCreateSchema.parse({ title: 'Test' })).toThrow()
-      expect(() => eventCreateSchema.parse({ event_date: tomorrow.toISOString() })).toThrow()
-    })
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      expect(() => eventCreateSchema.parse({ title: 'Test' })).toThrow();
+      expect(() =>
+        eventCreateSchema.parse({ event_date: tomorrow.toISOString() }),
+      ).toThrow();
+    });
 
     it('should validate date format', () => {
       const invalidEvent = {
         title: 'Test Event',
-        event_date: 'invalid-date'
-      }
+        event_date: 'invalid-date',
+      };
 
-      expect(() => eventCreateSchema.parse(invalidEvent)).toThrow()
-    })
-  })
-})
+      expect(() => eventCreateSchema.parse(invalidEvent)).toThrow();
+    });
+  });
+});
 
 describe('Guest Validation', () => {
   describe('guestCreateSchema', () => {
@@ -81,39 +83,39 @@ describe('Guest Validation', () => {
         phone: '+14155552368',
         guest_email: 'john@example.com',
         notes: 'Plus one included',
-        guest_tags: ['family', 'ceremony']
-      }
+        guest_tags: ['family', 'ceremony'],
+      };
 
-      expect(() => guestCreateSchema.parse(validGuest)).not.toThrow()
-    })
+      expect(() => guestCreateSchema.parse(validGuest)).not.toThrow();
+    });
 
     it('should require guest name', () => {
       const guestWithoutName = {
         guest_email: 'john@example.com',
-        phone: '+14155552368'
-      }
+        phone: '+14155552368',
+      };
 
-      expect(() => guestCreateSchema.parse(guestWithoutName)).toThrow()
-    })
+      expect(() => guestCreateSchema.parse(guestWithoutName)).toThrow();
+    });
 
     it('should accept empty optional fields', () => {
       const minimalGuest = {
-        guest_name: 'John Doe'
-      }
+        guest_name: 'John Doe',
+      };
 
-      expect(() => guestCreateSchema.parse(minimalGuest)).not.toThrow()
-    })
+      expect(() => guestCreateSchema.parse(minimalGuest)).not.toThrow();
+    });
 
     it('should validate email format when provided', () => {
       const guestWithInvalidEmail = {
         guest_name: 'John Doe',
-        guest_email: 'invalid-email'
-      }
+        guest_email: 'invalid-email',
+      };
 
-      expect(() => guestCreateSchema.parse(guestWithInvalidEmail)).toThrow()
-    })
-  })
-})
+      expect(() => guestCreateSchema.parse(guestWithInvalidEmail)).toThrow();
+    });
+  });
+});
 
 describe('Message Validation', () => {
   describe('messageCreateSchema', () => {
@@ -121,37 +123,37 @@ describe('Message Validation', () => {
       const validMessage = {
         content: 'Hello everyone! Looking forward to the celebration.',
         message_type: 'announcement' as const,
-        recipient_tags: ['all_guests']
-      }
+        recipient_tags: ['all_guests'],
+      };
 
-      expect(() => messageCreateSchema.parse(validMessage)).not.toThrow()
-    })
+      expect(() => messageCreateSchema.parse(validMessage)).not.toThrow();
+    });
 
     it('should require content', () => {
       const messageWithoutContent = {
-        message_type: 'announcement' as const
-      }
+        message_type: 'announcement' as const,
+      };
 
-      expect(() => messageCreateSchema.parse(messageWithoutContent)).toThrow()
-    })
+      expect(() => messageCreateSchema.parse(messageWithoutContent)).toThrow();
+    });
 
     it('should validate message type enum', () => {
       const messageWithInvalidType = {
         content: 'Test message',
-        message_type: 'invalid_type'
-      }
+        message_type: 'invalid_type',
+      };
 
-      expect(() => messageCreateSchema.parse(messageWithInvalidType)).toThrow()
-    })
+      expect(() => messageCreateSchema.parse(messageWithInvalidType)).toThrow();
+    });
 
     it('should limit content length', () => {
-      const longContent = 'x'.repeat(2001) // 2000 char limit
+      const longContent = 'x'.repeat(2001); // 2000 char limit
       const messageWithLongContent = {
         content: longContent,
-        message_type: 'direct' as const
-      }
+        message_type: 'direct' as const,
+      };
 
-      expect(() => messageCreateSchema.parse(messageWithLongContent)).toThrow()
-    })
-  })
-}) 
+      expect(() => messageCreateSchema.parse(messageWithLongContent)).toThrow();
+    });
+  });
+});

@@ -43,7 +43,7 @@ npm run test-users:cleanup-all
 ```bash
 # Available npm scripts
 npm run test-users:create      # Create individual users
-npm run test-users:scenario    # Create predefined scenarios  
+npm run test-users:scenario    # Create predefined scenarios
 npm run test-users:list        # List existing test users
 npm run test-users:cleanup     # Cleanup recent users
 npm run test-users:cleanup-all # Cleanup all test users
@@ -62,7 +62,7 @@ curl -X POST http://localhost:3000/api/admin/test-users \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Host",
-    "email": "host@test.local", 
+    "email": "host@test.local",
     "role": "host",
     "phone": "+15551234567"
   }'
@@ -91,6 +91,7 @@ A floating UI widget available during development for quick user creation.
 **Location**: Bottom-left corner of the app (development only)
 
 **Features**:
+
 - Quick scenario buttons (Wedding Host, Birthday Host)
 - Custom user creation form
 - User list and management
@@ -101,8 +102,9 @@ A floating UI widget available during development for quick user creation.
 ### Prerequisites
 
 1. **Supabase Service Role Key**: Required for creating Auth users
-   
+
    Add to `.env.local`:
+
    ```
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
    ```
@@ -114,6 +116,7 @@ A floating UI widget available during development for quick user creation.
 1. **Install Dependencies**: Already included in package.json
 
 2. **Configure Environment**:
+
    ```bash
    # Copy your Supabase service role key to .env.local
    echo "SUPABASE_SERVICE_ROLE_KEY=your_key_here" >> .env.local
@@ -128,32 +131,38 @@ A floating UI widget available during development for quick user creation.
 ## 📋 User Types and Roles
 
 ### Roles Available:
+
 - **`host`**: Can create and manage events
 - **`guest`**: Can be invited to events and RSVP
 - **`admin`**: Has administrative privileges (future use)
 
 ### Email Conventions:
+
 - Test users use `@test.local` domain
 - Format: `{name}.{role}@test.local`
 - Examples: `sarah.host@test.local`, `mike.guest@test.local`
 
 ### Phone Numbers:
+
 - Auto-generated format: `+1555XXXXXXX`
 - Can be customized when creating users
 
 ## 🔐 Security Considerations
 
 ### Development-Only Access:
+
 - All tools check `NODE_ENV === 'development'`
 - API routes return 403 in production
 - UI components only render in development
 
 ### Service Role Key Protection:
+
 - Required for creating Auth users
 - Must be stored securely in environment variables
 - Never commit to version control
 
 ### Test User Identification:
+
 - All test users marked with `test_user: true` metadata
 - Email domain `@test.local` for easy identification
 - Cleanup tools target only test users
@@ -161,16 +170,19 @@ A floating UI widget available during development for quick user creation.
 ## 🧪 Testing Workflows
 
 ### Quick Development Testing:
+
 1. Use the floating UI tool for rapid user creation
 2. Create scenario-based users for specific features
 3. Switch between users using development personas
 
 ### Comprehensive Testing:
+
 1. Use the CLI script to create full scenarios
 2. Run test suites with predefined users
 3. Clean up after testing sessions
 
 ### CI/CD Integration:
+
 ```bash
 # In your CI pipeline
 npm run test-users:scenario wedding-basic
@@ -180,15 +192,15 @@ npm run test-users:cleanup-all
 
 ## 📊 Comparison with Previous System
 
-| Aspect | Previous System | New System |
-|--------|----------------|------------|
-| **User Creation** | 4 hardcoded personas | Unlimited dynamic users |
-| **Authentication** | Deterministic passwords | Proper Supabase Auth |
-| **Phone Numbers** | Real numbers required | Auto-generated test numbers |
-| **Scenarios** | Manual setup | Predefined scenarios |
-| **Cleanup** | Manual database queries | Automated cleanup tools |
-| **RLS Compatibility** | Limited | Full support |
-| **Developer Experience** | High friction | Low friction |
+| Aspect                   | Previous System         | New System                  |
+| ------------------------ | ----------------------- | --------------------------- |
+| **User Creation**        | 4 hardcoded personas    | Unlimited dynamic users     |
+| **Authentication**       | Deterministic passwords | Proper Supabase Auth        |
+| **Phone Numbers**        | Real numbers required   | Auto-generated test numbers |
+| **Scenarios**            | Manual setup            | Predefined scenarios        |
+| **Cleanup**              | Manual database queries | Automated cleanup tools     |
+| **RLS Compatibility**    | Limited                 | Full support                |
+| **Developer Experience** | High friction           | Low friction                |
 
 ## 🚀 Advanced Usage
 
@@ -206,12 +218,12 @@ const SCENARIOS: Record<string, TestScenario> = {
         name: 'Custom Host',
         email: 'custom.host@test.local',
         role: 'host',
-        createEvents: ['custom-event']
+        createEvents: ['custom-event'],
       },
       // ... more users
-    ]
-  }
-}
+    ],
+  },
+};
 ```
 
 ### Integration with Existing Seed Script
@@ -233,10 +245,10 @@ const createTestUser = async (userData: CreateUserRequest) => {
   const response = await fetch('/api/admin/test-users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData)
-  })
-  return response.json()
-}
+    body: JSON.stringify(userData),
+  });
+  return response.json();
+};
 ```
 
 ## 🐛 Troubleshooting
@@ -244,12 +256,15 @@ const createTestUser = async (userData: CreateUserRequest) => {
 ### Common Issues:
 
 1. **"Service role key not configured"**
+
    - Solution: Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local`
 
 2. **"Admin API only available in development"**
+
    - Solution: Ensure `NODE_ENV=development`
 
 3. **"User profile not found"**
+
    - This is normal; the script creates profiles manually if triggers fail
 
 4. **RLS Policy Errors**
@@ -267,16 +282,19 @@ DEBUG=true npm run test-users:create -- --name="Debug User" --email="debug@test.
 ## 🔄 Migration from Old System
 
 ### Phase 1: Parallel Usage
+
 - Keep existing development personas
 - Add new test user tools alongside
 - Gradually adopt new workflows
 
 ### Phase 2: Full Migration
+
 - Replace hardcoded personas with dynamic creation
 - Update development documentation
 - Train team on new tools
 
 ### Phase 3: Cleanup
+
 - Remove old persona code
 - Simplify authentication flow
 - Archive old documentation
@@ -284,16 +302,19 @@ DEBUG=true npm run test-users:create -- --name="Debug User" --email="debug@test.
 ## 📝 Best Practices
 
 ### Development:
+
 - Use scenario-based users for feature testing
 - Clean up test users regularly
 - Don't commit test user credentials
 
 ### Testing:
+
 - Create users specific to test cases
 - Use automated cleanup in CI/CD
 - Verify RLS policies with test users
 
 ### Team Collaboration:
+
 - Share scenario names, not credentials
 - Document custom scenarios
 - Use consistent naming conventions
@@ -301,6 +322,7 @@ DEBUG=true npm run test-users:create -- --name="Debug User" --email="debug@test.
 ## 🔮 Future Enhancements
 
 ### Planned Features:
+
 - [ ] Event creation integration in scenarios
 - [ ] Guest relationship setup automation
 - [ ] Playwright test integration
@@ -308,6 +330,7 @@ DEBUG=true npm run test-users:create -- --name="Debug User" --email="debug@test.
 - [ ] User template system
 
 ### Possible Extensions:
+
 - [ ] Staging environment support
 - [ ] User behavior simulation
 - [ ] Performance testing user creation
@@ -324,4 +347,4 @@ For issues with the test user management system:
 3. Use the cleanup tools to reset state
 4. Check Supabase Auth dashboard for user status
 
-Remember: All tools are development-only and safe to experiment with! 
+Remember: All tools are development-only and safe to experiment with!

@@ -1,3 +1,3 @@
-export { BottomNavigation } from './BottomNavigation'
-export { NavigationLayout } from './NavigationLayout'
-export { RoleSwitcher } from './RoleSwitcher' 
+export { BottomNavigation } from './BottomNavigation';
+export { NavigationLayout } from './NavigationLayout';
+export { RoleSwitcher } from './RoleSwitcher';

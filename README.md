@@ -15,18 +15,21 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 ## 🎉 Current Features (Latest Update)
 
 ### **🏠 Comprehensive Host Dashboard**
+
 - **Tabbed Interface**: Overview, Guests, Messages, Event Setup
 - **Real-time Statistics**: Live RSVP counts and guest analytics
 - **Quick Actions Sidebar**: Instant access to key functions
 - **Getting Started Flow**: Step-by-step guidance for new hosts
 
 ### **🎪 Multi-Event Management**
+
 - **Sub-Event Creation**: Rehearsal Dinner, Ceremony, Reception, and custom events
 - **Event Details**: Date, time, location, and descriptions for each event
 - **Required vs Optional Events**: Flexible guest assignment options
 - **Integration Guidance**: Clear next steps for guest management
 
 ### **👥 Advanced Guest Management**
+
 - **Bulk Operations**: Mass assignment/removal from events with checkbox selection
 - **Smart Filtering**: Search by name/email/phone, filter by event and RSVP status
 - **Visual Organization**: Color-coded RSVP indicators and event assignment tags
@@ -34,6 +37,7 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 - **Guest Import**: CSV upload wizard for bulk guest addition
 
 ### **💬 Sophisticated Messaging System**
+
 - **Flexible Scheduling**: Immediate or future message scheduling
 - **Multi-channel Delivery**: SMS (primary), Push notifications, Email options
 - **Advanced Targeting**: All guests, specific events, guest tags, or individuals
@@ -41,6 +45,7 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 - **SMS Optimization**: Character counting and delivery optimization
 
 ### **📊 Real-time Analytics**
+
 - **RSVP Tracking**: Live attendance statistics
 - **Guest Insights**: Event participation and response rates
 - **Message Analytics**: Delivery tracking across channels
@@ -49,27 +54,29 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 
 ## 🧱 Tech Stack
 
-| Layer           | Tool/Framework        | Purpose                              |
-|----------------|------------------------|--------------------------------------|
-| Frontend       | Next.js 15 (App Router) | Core application framework         |
-| Styling        | Tailwind CSS           | Utility-first responsive design      |
-| UI Components  | shadcn/ui              | Reusable, modern component library   |
-| Backend        | Supabase (PostgreSQL)  | DB, Auth, Storage, RLS               |
-| Deployment     | Vercel                 | Hosting & CI/CD                      |
-| IDE            | Cursor                 | AI-powered coding workflow           |
-| Design         | Figma + Untitled UI    | Visual design system                 |
-| Project Mgmt   | Notion                 | Roadmap, tasks, and logs             |
+| Layer         | Tool/Framework          | Purpose                            |
+| ------------- | ----------------------- | ---------------------------------- |
+| Frontend      | Next.js 15 (App Router) | Core application framework         |
+| Styling       | Tailwind CSS            | Utility-first responsive design    |
+| UI Components | shadcn/ui               | Reusable, modern component library |
+| Backend       | Supabase (PostgreSQL)   | DB, Auth, Storage, RLS             |
+| Deployment    | Vercel                  | Hosting & CI/CD                    |
+| IDE           | Cursor                  | AI-powered coding workflow         |
+| Design        | Figma + Untitled UI     | Visual design system               |
+| Project Mgmt  | Notion                  | Roadmap, tasks, and logs           |
 
 ---
 
 ## 🗄️ Database Architecture
 
 ### **Core Tables**
+
 - `events` - Main wedding events
 - `event_guests` - Guest list with RSVP tracking
 - `users` - Authentication and user profiles
 
 ### **Advanced Features (Latest)**
+
 - `sub_events` - Individual event management (Rehearsal, Ceremony, etc.)
 - `guest_sub_event_assignments` - Flexible guest-to-event assignments
 - `scheduled_messages` - Advanced message scheduling with targeting
@@ -77,6 +84,7 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 - `communication_preferences` - User delivery preferences and quiet hours
 
 ### **Security & Performance**
+
 - **Row Level Security (RLS)** on all tables
 - **Helper Functions**: `is_event_host()`, `is_event_guest()`
 - **Performance Indexes** for optimal query performance
@@ -93,18 +101,18 @@ Unveil simplifies wedding communication and memory sharing—before, during, and
 
 ## ✅ Current Feature Status
 
-| Feature                    | Status | Description                                              |
-|---------------------------|--------|----------------------------------------------------------|
-| ✅ Host Dashboard          | ✅ Live | Complete tabbed interface with real-time stats          |
-| ✅ Multi-Event Management  | ✅ Live | Create/manage multiple events (Rehearsal, Ceremony, etc.) |
-| ✅ Advanced Guest Management | ✅ Live | Bulk operations, filtering, event assignments           |
-| ✅ Message Scheduling      | ✅ Live | Target guests by event/tags with multi-channel delivery |
-| ✅ RSVP Tracking          | ✅ Live | Real-time attendance analytics                          |
-| ✅ Guest Import           | ✅ Live | CSV upload wizard                                       |
-| 🔧 SMS Integration        | Planned | Twilio API for actual message delivery                  |
-| 🔧 Push Notifications     | Planned | Firebase for app users                                  |
-| 🔧 Media Gallery         | Planned | Photo/video upload and sharing                          |
-| 🔧 Post-Wedding Capsule   | Planned | Anniversary messages and memory sharing                 |
+| Feature                      | Status  | Description                                               |
+| ---------------------------- | ------- | --------------------------------------------------------- |
+| ✅ Host Dashboard            | ✅ Live | Complete tabbed interface with real-time stats            |
+| ✅ Multi-Event Management    | ✅ Live | Create/manage multiple events (Rehearsal, Ceremony, etc.) |
+| ✅ Advanced Guest Management | ✅ Live | Bulk operations, filtering, event assignments             |
+| ✅ Message Scheduling        | ✅ Live | Target guests by event/tags with multi-channel delivery   |
+| ✅ RSVP Tracking             | ✅ Live | Real-time attendance analytics                            |
+| ✅ Guest Import              | ✅ Live | CSV upload wizard                                         |
+| 🔧 SMS Integration           | Planned | Twilio API for actual message delivery                    |
+| 🔧 Push Notifications        | Planned | Firebase for app users                                    |
+| 🔧 Media Gallery             | Planned | Photo/video upload and sharing                            |
+| 🔧 Post-Wedding Capsule      | Planned | Anniversary messages and memory sharing                   |
 
 ---
 
@@ -158,6 +166,7 @@ pnpm dev
 ## 📈 Recent Updates
 
 ### **December 2024 - Major Host Dashboard Release**
+
 - **Comprehensive Dashboard**: Complete host management interface
 - **Database Enhancement**: Advanced messaging and event management schema
 - **TypeScript Improvements**: Strict mode compliance and comprehensive type safety
@@ -165,6 +174,7 @@ pnpm dev
 - **Production Ready**: All ESLint and build errors resolved
 
 ### **Migration Applied**
+
 - `20250602002100_enhance_messaging_system.sql` - Complete messaging and multi-event architecture
 
 ---
