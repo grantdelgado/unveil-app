@@ -4,6 +4,19 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  SectionTitle,
+  FieldLabel,
+  TextInput,
+  PrimaryButton,
+  SecondaryButton,
+  MicroCopy,
+  DevModeBox
+} from '@/components/ui';
 
 export default function ProfilePage() {
   const [email, setEmail] = useState('');
@@ -58,143 +71,147 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-app">
-      <div className="max-w-2xl mx-auto px-6 py-12">
+    <PageWrapper centered={false}>
+      <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => router.push('/select-event')}
-            className="flex items-center text-stone-600 hover:text-stone-800 font-medium transition-colors"
-          >
-            <span className="text-xl mr-2">←</span>
-            Back to Events
-          </button>
-        </div>
+        <CardContainer maxWidth="xl">
+          <div className="flex items-center justify-between">
+            <SecondaryButton
+              onClick={() => router.push('/select-event')}
+              fullWidth={false}
+              className="flex items-center gap-2"
+            >
+              <span className="text-xl">←</span>
+              Back to Events
+            </SecondaryButton>
+          </div>
+        </CardContainer>
 
         {/* Profile Section */}
-        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
-                <circle cx="12" cy="8" r="4" />
-                <ellipse cx="12" cy="17" rx="7" ry="4" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-semibold text-stone-800 mb-2">
-              Your Profile
-            </h1>
-            <p className="text-stone-600">
-              Manage your account settings and preferences
-            </p>
-          </div>
-
-          <form onSubmit={handleUpdate} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                readOnly
-                className="w-full px-4 py-3 border border-stone-200 rounded-lg bg-stone-50 text-stone-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Display Name
-              </label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all"
-                placeholder="Enter your display name"
-                disabled={isLoading}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200 disabled:opacity-50"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </button>
-
-            {message && (
-              <div
-                className={`p-3 rounded-lg text-center text-sm ${
-                  message.includes('wrong')
-                    ? 'bg-red-50 text-red-700 border border-red-100'
-                    : 'bg-green-50 text-green-700 border border-green-100'
-                }`}
-              >
-                {message}
+        <CardContainer maxWidth="xl">
+          <div className="space-y-8">
+            <div className="text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center mx-auto">
+                <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
+                  <circle cx="12" cy="8" r="4" />
+                  <ellipse cx="12" cy="17" rx="7" ry="4" />
+                </svg>
               </div>
-            )}
-          </form>
-        </div>
+              <div className="space-y-2">
+                <PageTitle>Your Profile</PageTitle>
+                <SubTitle>Manage your account settings and preferences</SubTitle>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-5">
+              <div className="space-y-2">
+                <FieldLabel htmlFor="email">Email Address</FieldLabel>
+                <TextInput
+                  type="email"
+                  id="email"
+                  value={email}
+                  disabled
+                  className="bg-gray-50 text-gray-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <FieldLabel htmlFor="displayName">Display Name</FieldLabel>
+                <TextInput
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your display name"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <PrimaryButton
+                type="submit"
+                disabled={isLoading}
+                loading={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </PrimaryButton>
+
+              {message && (
+                <div
+                  className={`p-4 rounded-lg text-center text-sm ${
+                    message.includes('wrong')
+                      ? 'bg-red-50 text-red-700 border border-red-100'
+                      : 'bg-green-50 text-green-700 border border-green-100'
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+            </form>
+          </div>
+        </CardContainer>
 
         {/* Event Management Section */}
-        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-stone-800 mb-2">
-              Event Management
-            </h2>
-            <p className="text-stone-600">
-              Create and manage your wedding events
-            </p>
-          </div>
+        <CardContainer maxWidth="xl">
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <SectionTitle>Event Management</SectionTitle>
+              <SubTitle>Create and manage your wedding events</SubTitle>
+            </div>
 
-          <div className="space-y-4">
-            {/* Create New Event Button */}
-            <Link
-              href="/host/events/create"
-              className="w-full inline-flex items-center justify-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200"
-            >
-              <span className="mr-2">+</span>
-              Create New Event
-            </Link>
+            <div className="space-y-4">
+              {/* Create New Event Button */}
+              <Link href="/host/events/create">
+                <PrimaryButton className="w-full flex items-center justify-center gap-2">
+                  <span>+</span>
+                  Create New Event
+                </PrimaryButton>
+              </Link>
 
-            {/* Show additional management options if user has hosted events */}
-            {hasHostedEvents && (
-              <div className="pt-4 border-t border-stone-200">
-                <p className="text-sm text-stone-600 mb-4">
-                  You have hosted events. You can create additional events or
-                  manage existing ones.
-                </p>
-                <Link
-                  href="/host/events/create"
-                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-stone-50 text-stone-700 font-medium rounded-lg hover:bg-stone-100 border border-stone-200 transition-colors"
-                >
-                  Create Another Event
-                </Link>
-              </div>
-            )}
+              {/* Show additional management options if user has hosted events */}
+              {hasHostedEvents && (
+                <div className="pt-4 border-t border-gray-200 space-y-4">
+                  <MicroCopy className="text-center">
+                    You have hosted events. You can create additional events or manage existing ones.
+                  </MicroCopy>
+                  <Link href="/host/events/create">
+                    <SecondaryButton className="w-full">
+                      Create Another Event
+                    </SecondaryButton>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </CardContainer>
 
         {/* Account Actions */}
-        <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-8">
-          <h2 className="text-xl font-medium text-stone-800 mb-6">
-            Account Actions
-          </h2>
+        <CardContainer maxWidth="xl">
+          <div className="space-y-6">
+            <SectionTitle>Account Actions</SectionTitle>
 
-          <div className="space-y-4">
-            <button
-              onClick={() => router.push('/select-event')}
-              className="w-full py-3 px-4 bg-stone-50 text-stone-700 font-medium rounded-lg hover:bg-stone-100 border border-stone-200 transition-colors"
-            >
-              View All Events
-            </button>
+            <div className="space-y-3">
+              <SecondaryButton
+                onClick={() => router.push('/select-event')}
+                className="w-full"
+              >
+                View All Events
+              </SecondaryButton>
 
-            <LogoutButtonStyled router={router} />
+              <LogoutButtonStyled router={router} />
+            </div>
           </div>
-        </div>
+        </CardContainer>
+
+        {/* Development Mode */}
+        <DevModeBox>
+          <p><strong>Profile State:</strong></p>
+          <p>Email: {email || 'N/A'}</p>
+          <p>Display Name: {displayName || '(empty)'}</p>
+          <p>Has Hosted Events: {hasHostedEvents ? 'yes' : 'no'}</p>
+          <p>Loading: {isLoading ? 'true' : 'false'}</p>
+          {message && <p className="text-blue-600">Message: {message}</p>}
+        </DevModeBox>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 
@@ -208,11 +225,11 @@ function LogoutButtonStyled({
     router.push('/login');
   };
   return (
-    <button
+    <SecondaryButton
       onClick={handleLogout}
-      className="w-full py-3 px-4 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 border border-red-200 transition-colors"
+      className="w-full text-red-600 border-red-200 hover:bg-red-50"
     >
       Sign Out
-    </button>
+    </SecondaryButton>
   );
 }

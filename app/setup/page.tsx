@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUserProfile } from '@/services/auth';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import type { User } from '@/lib/supabase/types';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  FieldLabel,
+  TextInput,
+  PrimaryButton,
+  SecondaryButton,
+  MicroCopy,
+  LoadingSpinner,
+  DevModeBox
+} from '@/components/ui';
 
 export default function AccountSetupPage() {
   const [fullName, setFullName] = useState('');
@@ -99,88 +110,94 @@ export default function AccountSetupPage() {
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your account...</p>
-        </div>
-      </div>
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Loading your account..." />
+      </PageWrapper>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-4">👋</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome to Unveil!
-          </h1>
-          <p className="text-gray-600">
-            Let&apos;s set up your account to get started
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            id="fullName"
-            label="Full Name"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Enter your full name"
-            disabled={loading}
-            isRequired
-          />
-
-          <Input
-            id="email"
-            label="Email Address (Optional)"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email address"
-            disabled={loading}
-          />
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              disabled={loading}
-              isLoading={loading}
-            >
-              {loading ? 'Setting up...' : 'Complete Setup'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              onClick={handleSkip}
-              disabled={loading}
-            >
-              Skip for now
-            </Button>
+    <PageWrapper>
+      <CardContainer>
+        <div className="space-y-6">
+          <div className="text-center space-y-4">
+            <div className="text-4xl">👋</div>
+            <PageTitle>Welcome to Unveil!</PageTitle>
+            <SubTitle>Let&apos;s set up your account to get started</SubTitle>
           </div>
-        </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Phone: {userProfile.phone}</p>
-          <p className="mt-1">
-            You can update this information later in your profile
-          </p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <FieldLabel htmlFor="fullName" required>
+                Full Name
+              </FieldLabel>
+              <TextInput
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <FieldLabel htmlFor="email">
+                Email Address (Optional)
+              </FieldLabel>
+              <TextInput
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                disabled={loading}
+              />
+            </div>
+
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <PrimaryButton
+                type="submit"
+                disabled={loading}
+                loading={loading}
+              >
+                {loading ? 'Setting up...' : 'Complete Setup'}
+              </PrimaryButton>
+
+              <SecondaryButton
+                type="button"
+                onClick={handleSkip}
+                disabled={loading}
+              >
+                Skip for now
+              </SecondaryButton>
+            </div>
+          </form>
+
+          <div className="text-center space-y-1">
+            <MicroCopy>Phone: {userProfile.phone}</MicroCopy>
+            <MicroCopy>
+              You can update this information later in your profile
+            </MicroCopy>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <DevModeBox>
+          <p><strong>Account Setup State:</strong></p>
+          <p>User ID: {userProfile?.id || 'N/A'}</p>
+          <p>Phone: {userProfile?.phone || 'N/A'}</p>
+          <p>Current Full Name: {userProfile?.full_name || '(empty)'}</p>
+          <p>Form Full Name: {fullName || '(empty)'}</p>
+          <p>Form Email: {email || '(empty)'}</p>
+          <p>Loading: {loading ? 'true' : 'false'}</p>
+          {error && <p className="text-red-600">Error: {error}</p>}
+        </DevModeBox>
+      </CardContainer>
+    </PageWrapper>
   );
 }

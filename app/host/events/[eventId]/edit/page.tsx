@@ -7,8 +7,21 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { uploadFile, getPublicUrl, deleteFile } from '@/services/storage';
 import { cn, formatEventDate } from '@/lib/utils';
-import { LoadingPage } from '@/components/ui/LoadingSpinner';
 import type { Database } from '@/app/reference/supabase.types';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  SectionTitle,
+  FieldLabel,
+  TextInput,
+  PrimaryButton,
+  SecondaryButton,
+  MicroCopy,
+  DevModeBox,
+  LoadingSpinner
+} from '@/components/ui';
 
 type Event = Database['public']['Tables']['events']['Row'];
 type EventUpdate = Database['public']['Tables']['events']['Update'];
@@ -342,202 +355,145 @@ export default function EditEventPage() {
   };
 
   if (pageLoading) {
-    return <LoadingPage message="Loading event details..." />;
+    return (
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Loading event details..." />
+      </PageWrapper>
+    );
   }
 
   if (!originalEvent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <h1 className="text-2xl font-semibold text-stone-800 mb-4">
-            Event Not Found
-          </h1>
-          <p className="text-stone-600 mb-6">
-            The event you&apos;re trying to edit could not be found.
-          </p>
-          <button
-            onClick={() => router.push('/host/dashboard')}
-            className="bg-stone-800 text-white font-medium py-3 px-6 rounded-lg hover:bg-stone-900 transition-colors"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
+      <PageWrapper>
+        <CardContainer>
+          <div className="text-center space-y-6">
+            <div className="text-4xl">🤔</div>
+            <div className="space-y-2">
+              <PageTitle>Event Not Found</PageTitle>
+              <SubTitle>
+                The event you&apos;re trying to edit could not be found.
+              </SubTitle>
+            </div>
+            <PrimaryButton 
+              onClick={() => router.push('/host/dashboard')}
+              fullWidth={false}
+            >
+              Back to Dashboard
+            </PrimaryButton>
+          </div>
+        </CardContainer>
+      </PageWrapper>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 py-12 px-4">
+    <PageWrapper centered={false}>
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-semibold text-stone-800 mb-4 tracking-tight">
-            Edit Event Details
-          </h1>
-          <p className="text-lg text-stone-600">
-            Update your event information and settings
-          </p>
-        </div>
+        <CardContainer maxWidth="xl" className="mb-8">
+          <div className="text-center space-y-4">
+            <PageTitle>Edit Event Details</PageTitle>
+            <SubTitle>Update your event information and settings</SubTitle>
+          </div>
+        </CardContainer>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+        {/* Main Form */}
+        <CardContainer maxWidth="xl">
           <form onSubmit={handleUpdateEvent} className="space-y-8">
             {/* Event Details Section */}
-            <div>
-              <h2 className="text-xl font-semibold text-stone-800 mb-6 flex items-center">
-                <span className="text-2xl mr-2">📅</span>
+            <div className="space-y-6">
+              <SectionTitle className="flex items-center gap-2">
+                <span className="text-2xl">📅</span>
                 Event Details
-              </h2>
+              </SectionTitle>
 
-              <div className="space-y-6">
-                {/* Event Name */}
-                <div>
-                  <label
-                    htmlFor="title"
-                    className="block text-sm font-medium text-stone-700 mb-2"
-                  >
-                    Wedding/Event Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="e.g., Sarah & John's Wedding"
-                    className={cn(
-                      'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-lg',
-                      errors.title
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-stone-200',
-                    )}
+              {/* Event Name */}
+              <div className="space-y-2">
+                <FieldLabel htmlFor="title" required>
+                  Wedding/Event Name
+                </FieldLabel>
+                <TextInput
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="e.g., Sarah & John's Wedding"
+                  disabled={isLoading}
+                  error={errors.title}
+                />
+              </div>
+
+              {/* Date and Time Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Event Date */}
+                <div className="space-y-2">
+                  <FieldLabel htmlFor="event_date" required>
+                    Event Date
+                  </FieldLabel>
+                  <TextInput
+                    type="date"
+                    id="event_date"
+                    value={formData.event_date}
+                    onChange={(e) => handleInputChange('event_date', e.target.value)}
                     disabled={isLoading}
-                  />
-                  {errors.title && (
-                    <p className="text-red-600 text-sm mt-1">{errors.title}</p>
-                  )}
-                </div>
-
-                {/* Date and Time Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Event Date */}
-                  <div>
-                    <label
-                      htmlFor="event_date"
-                      className="block text-sm font-medium text-stone-700 mb-2"
-                    >
-                      Event Date *
-                    </label>
-                    <input
-                      type="date"
-                      id="event_date"
-                      value={formData.event_date}
-                      onChange={(e) =>
-                        handleInputChange('event_date', e.target.value)
-                      }
-                      className={cn(
-                        'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-lg',
-                        errors.event_date
-                          ? 'border-red-300 bg-red-50'
-                          : 'border-stone-200',
-                      )}
-                      disabled={isLoading}
-                    />
-                    {errors.event_date && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.event_date}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Event Time */}
-                  <div>
-                    <label
-                      htmlFor="event_time"
-                      className="block text-sm font-medium text-stone-700 mb-2"
-                    >
-                      Event Time *
-                    </label>
-                    <input
-                      type="time"
-                      id="event_time"
-                      value={formData.event_time}
-                      onChange={(e) =>
-                        handleInputChange('event_time', e.target.value)
-                      }
-                      className={cn(
-                        'w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-lg',
-                        errors.event_time
-                          ? 'border-red-300 bg-red-50'
-                          : 'border-stone-200',
-                      )}
-                      disabled={isLoading}
-                    />
-                    {errors.event_time && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.event_time}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Event Location */}
-                <div>
-                  <label
-                    htmlFor="location"
-                    className="block text-sm font-medium text-stone-700 mb-2"
-                  >
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) =>
-                      handleInputChange('location', e.target.value)
-                    }
-                    placeholder="e.g., Central Park, New York"
-                    className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-lg"
-                    disabled={isLoading}
+                    error={errors.event_date}
                   />
                 </div>
 
-                {/* Event Description */}
-                <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-stone-700 mb-2"
-                  >
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      handleInputChange('description', e.target.value)
-                    }
-                    placeholder="Tell your guests about your special day..."
-                    rows={4}
-                    className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-lg resize-none"
+                {/* Event Time */}
+                <div className="space-y-2">
+                  <FieldLabel htmlFor="event_time" required>
+                    Event Time
+                  </FieldLabel>
+                  <TextInput
+                    type="time"
+                    id="event_time"
+                    value={formData.event_time}
+                    onChange={(e) => handleInputChange('event_time', e.target.value)}
                     disabled={isLoading}
+                    error={errors.event_time}
                   />
-                  <p className="text-stone-500 text-sm mt-1">
-                    Optional: Share details about your celebration
-                  </p>
                 </div>
+              </div>
+
+              {/* Event Location */}
+              <div className="space-y-2">
+                <FieldLabel htmlFor="location">Location</FieldLabel>
+                <TextInput
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  placeholder="e.g., Central Park, New York"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Event Description */}
+              <div className="space-y-2">
+                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Tell your guests about your special day..."
+                  rows={4}
+                  className="w-full py-3 px-4 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 transition-colors duration-200 resize-none"
+                  disabled={isLoading}
+                />
+                <MicroCopy>Optional: Share details about your celebration</MicroCopy>
               </div>
             </div>
 
             {/* Header Image Section */}
-            <div>
-              <h2 className="text-xl font-semibold text-stone-800 mb-6 flex items-center">
-                <span className="text-2xl mr-2">🖼️</span>
+            <div className="space-y-6">
+              <SectionTitle className="flex items-center gap-2">
+                <span className="text-2xl">🖼️</span>
                 Header Image
-              </h2>
+              </SectionTitle>
 
               {/* Current Image Display */}
               {currentImageUrl && !shouldDeleteImage && (
-                <div className="mb-4">
-                  <p className="text-sm text-stone-600 mb-2">Current image:</p>
+                <div className="space-y-3">
+                  <MicroCopy>Current image:</MicroCopy>
                   <div className="relative">
                     <Image
                       src={currentImageUrl}
@@ -576,15 +532,15 @@ export default function EditEventPage() {
                   className={cn(
                     'w-full p-8 border-2 border-dashed rounded-lg transition-colors cursor-pointer',
                     isDragActive
-                      ? 'border-purple-400 bg-purple-50'
-                      : 'border-stone-300 hover:border-purple-300 hover:bg-stone-50',
+                      ? 'border-pink-400 bg-pink-50'
+                      : 'border-gray-300 hover:border-pink-300 hover:bg-gray-50',
                     errors.image && 'border-red-300 bg-red-50',
                   )}
                 >
                   <input {...getInputProps()} />
-                  <div className="text-center">
+                  <div className="text-center space-y-4">
                     <svg
-                      className="mx-auto h-12 w-12 text-stone-400"
+                      className="mx-auto h-12 w-12 text-gray-400"
                       stroke="currentColor"
                       fill="none"
                       viewBox="0 0 48 48"
@@ -596,15 +552,15 @@ export default function EditEventPage() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <div className="mt-4">
-                      <p className="text-lg font-medium text-stone-700">
+                    <div>
+                      <p className="text-lg font-medium text-gray-700">
                         {isDragActive
                           ? 'Drop your image here'
                           : 'Upload a new header image'}
                       </p>
-                      <p className="text-stone-500 mt-1">
+                      <MicroCopy className="mt-1">
                         Drag & drop or click to browse • PNG, JPG up to 10MB
-                      </p>
+                      </MicroCopy>
                     </div>
                   </div>
                 </div>
@@ -612,86 +568,83 @@ export default function EditEventPage() {
 
               {/* New Image Preview */}
               {imagePreview && (
-                <div className="relative">
-                  <p className="text-sm text-stone-600 mb-2">New image:</p>
-                  <Image
-                    src={imagePreview}
-                    alt="New event header preview"
-                    width={800}
-                    height={192}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeNewImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                <div className="space-y-3">
+                  <MicroCopy>New image:</MicroCopy>
+                  <div className="relative">
+                    <Image
+                      src={imagePreview}
+                      alt="New event header preview"
+                      width={800}
+                      height={192}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeNewImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
 
               {errors.image && (
-                <p className="text-red-600 text-sm mt-1">{errors.image}</p>
+                <p className="text-red-600 text-sm">{errors.image}</p>
               )}
 
               {imageUploadProgress > 0 && imageUploadProgress < 100 && (
-                <div className="mt-2">
-                  <div className="bg-stone-200 rounded-full h-2">
+                <div className="space-y-2">
+                  <div className="bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-[#FF6B6B] h-2 rounded-full transition-all duration-300"
                       style={{ width: `${imageUploadProgress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-stone-600 mt-1">
-                    Uploading image...
-                  </p>
+                  <MicroCopy>Uploading image...</MicroCopy>
                 </div>
               )}
             </div>
 
             {/* Settings Section */}
-            <div>
-              <h2 className="text-xl font-semibold text-stone-800 mb-6 flex items-center">
-                <span className="text-2xl mr-2">⚙️</span>
+            <div className="space-y-6">
+              <SectionTitle className="flex items-center gap-2">
+                <span className="text-2xl">⚙️</span>
                 Settings
-              </h2>
+              </SectionTitle>
 
-              <div className="bg-stone-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                   <input
                     type="checkbox"
                     id="is_public"
                     checked={formData.is_public}
-                    onChange={(e) =>
-                      handleInputChange('is_public', e.target.checked)
-                    }
-                    className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-stone-300 rounded mt-0.5"
+                    onChange={(e) => handleInputChange('is_public', e.target.checked)}
+                    className="h-5 w-5 text-[#FF6B6B] focus:ring-pink-300 border-gray-300 rounded mt-0.5"
                     disabled={isLoading}
                   />
-                  <div>
+                  <div className="space-y-1">
                     <label
                       htmlFor="is_public"
-                      className="text-sm font-medium text-stone-700"
+                      className="text-base font-medium text-gray-700"
                     >
                       Make this wedding hub discoverable
                     </label>
-                    <p className="text-stone-500 text-sm mt-1">
-                      Guests will be able to find your event when they sign up
-                      with their invited phone number
-                    </p>
+                    <MicroCopy>
+                      Guests will be able to find your event when they sign up with their invited phone number
+                    </MicroCopy>
                   </div>
                 </div>
               </div>
@@ -699,51 +652,48 @@ export default function EditEventPage() {
 
             {/* Event Preview */}
             {formData.title && formData.event_date && (
-              <div className="bg-gradient-to-r from-purple-50 to-rose-50 rounded-lg p-6 border border-purple-100">
-                <h3 className="text-lg font-semibold text-stone-800 mb-3 flex items-center">
-                  <span className="text-xl mr-2">👁️</span>
-                  Updated Event Preview
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <strong>Name:</strong> {formData.title}
-                  </p>
-                  <p>
-                    <strong>Date:</strong>{' '}
-                    {formatEventDate(
-                      formData.event_date + 'T' + formData.event_time,
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-6 border border-pink-100">
+                <div className="space-y-4">
+                  <SectionTitle className="flex items-center gap-2 text-lg">
+                    <span className="text-xl">👁️</span>
+                    Updated Event Preview
+                  </SectionTitle>
+                  <div className="space-y-2 text-sm">
+                    <p>
+                      <strong>Name:</strong> {formData.title}
+                    </p>
+                    <p>
+                      <strong>Date:</strong>{' '}
+                      {formatEventDate(
+                        formData.event_date + 'T' + formData.event_time,
+                      )}
+                    </p>
+                    {formData.location && (
+                      <p>
+                        <strong>Location:</strong> {formData.location}
+                      </p>
                     )}
-                  </p>
-                  {formData.location && (
-                    <p>
-                      <strong>Location:</strong> {formData.location}
-                    </p>
-                  )}
-                  {formData.description && (
-                    <p>
-                      <strong>Description:</strong> {formData.description}
-                    </p>
-                  )}
+                    {formData.description && (
+                      <p>
+                        <strong>Description:</strong> {formData.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Submit Button */}
             <div className="flex justify-end pt-4">
-              <button
+              <PrimaryButton
                 type="submit"
-                className="bg-stone-800 text-white font-medium py-3 px-8 rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 disabled={isLoading}
+                fullWidth={false}
+                loading={isLoading}
+                className="px-8"
               >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Updating Event...
-                  </div>
-                ) : (
-                  'Update Event'
-                )}
-              </button>
+                {isLoading ? 'Updating Event...' : 'Update Event'}
+              </PrimaryButton>
             </div>
 
             {/* Form Message */}
@@ -762,19 +712,33 @@ export default function EditEventPage() {
               </div>
             )}
           </form>
-        </div>
+        </CardContainer>
 
-        {/* Back Link */}
+        {/* Back Navigation */}
         <div className="text-center mt-6">
-          <button
+          <SecondaryButton
             onClick={() => router.push(`/host/events/${eventId}/dashboard`)}
-            className="text-stone-600 hover:text-stone-800 font-medium transition-colors"
             disabled={isLoading}
+            fullWidth={false}
           >
             ← Cancel and Back to Dashboard
-          </button>
+          </SecondaryButton>
         </div>
+
+        {/* Development Mode */}
+        <DevModeBox>
+          <p><strong>Event Edit State:</strong></p>
+          <p>Event ID: {eventId}</p>
+          <p>Original Event: {originalEvent?.title || 'N/A'}</p>
+          <p>Current Title: {formData.title || '(empty)'}</p>
+          <p>Has Current Image: {currentImageUrl ? 'yes' : 'no'}</p>
+          <p>Has New Image: {headerImage ? 'yes' : 'no'}</p>
+          <p>Should Delete Image: {shouldDeleteImage ? 'yes' : 'no'}</p>
+          <p>Loading: {isLoading ? 'true' : 'false'}</p>
+          <p>Image Upload Progress: {imageUploadProgress}%</p>
+          <p>Errors: {Object.keys(errors).length > 0 ? Object.keys(errors).join(', ') : 'none'}</p>
+        </DevModeBox>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

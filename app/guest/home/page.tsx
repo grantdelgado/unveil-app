@@ -1,24 +1,50 @@
 // app/guest/home/page.tsx
+'use client';
+
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SectionTitle,
+  PrimaryButton,
+  SecondaryButton,
+  DevModeBox
+} from '@/components/ui';
+
 export default function GuestHome() {
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">🎉 Guest Home</h1>
+    <PageWrapper>
+      <CardContainer maxWidth="md">
+        <div className="text-center space-y-8">
+          <div className="space-y-4">
+            <div className="text-4xl">🎉</div>
+            <PageTitle>Guest Home</PageTitle>
+          </div>
 
-      {/* RSVP Section */}
-      <section className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">RSVP</h2>
-        <button className="bg-green-600 text-white px-4 py-2 rounded">
-          RSVP Now
-        </button>
-      </section>
+          {/* RSVP Section */}
+          <div className="space-y-4">
+            <SectionTitle>RSVP</SectionTitle>
+            <PrimaryButton fullWidth={false}>
+              RSVP Now
+            </PrimaryButton>
+          </div>
 
-      {/* Upload Media Section */}
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Share Memories</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded">
-          Upload a Photo/Video
-        </button>
-      </section>
-    </main>
+          {/* Upload Media Section */}
+          <div className="space-y-4">
+            <SectionTitle>Share Memories</SectionTitle>
+            <SecondaryButton fullWidth={false}>
+              Upload a Photo/Video
+            </SecondaryButton>
+          </div>
+        </div>
+
+        <DevModeBox>
+          <p><strong>Guest Home State:</strong></p>
+          <p>Simple landing page for guest functionality</p>
+          <p>Shows RSVP and media upload options</p>
+          <p>Ready for future functionality integration</p>
+        </DevModeBox>
+      </CardContainer>
+    </PageWrapper>
   );
 }

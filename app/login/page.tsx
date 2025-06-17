@@ -5,8 +5,21 @@ import { useRouter } from 'next/navigation';
 
 import { logAuth, logAuthError, logDev } from '@/lib/logger';
 import { sendOTP, verifyOTP, validatePhoneNumber } from '@/services/auth';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { 
+  PageWrapper,
+  CardContainer,
+  LogoContainer,
+  PageTitle,
+  SubTitle,
+  FieldLabel,
+  PhoneNumberInput,
+  OTPInput,
+  PrimaryButton,
+  SecondaryButton,
+  MicroCopy,
+  DevModeBox,
+  LoadingSpinner
+} from '@/components/ui';
 
 // Login flow steps
 type LoginStep = 'phone' | 'otp';
@@ -148,118 +161,82 @@ export default function LoginPage() {
     setIsDev(false);
   };
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const cleaned = value.replace(/\D/g, '');
-
-    // Format as (XXX) XXX-XXXX for US numbers
-    if (cleaned.length >= 10) {
-      const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})/);
-      if (match) {
-        return `(${match[1]}) ${match[2]}-${match[3]}`;
-      }
-    }
-
-    // For shorter numbers, just return the digits
-    if (cleaned.length >= 6) {
-      const match = cleaned.match(/^(\d{3})(\d{0,3})(\d{0,4})/);
-      if (match) {
-        let formatted = `(${match[1]})`;
-        if (match[2]) formatted += ` ${match[2]}`;
-        if (match[3]) formatted += `-${match[3]}`;
-        return formatted;
-      }
-    }
-
-    return cleaned;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhone(formatted);
-
+  const handlePhoneChange = (value: string) => {
+    setPhone(value);
     // Clear error when user starts typing
     if (error) setError('');
   };
 
-  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Only digits, max 6
+  const handleOtpChange = (value: string) => {
     setOtp(value);
-
     // Clear error when user starts typing
     if (error) setError('');
   };
+
+  if (loading && step === 'phone' && phone) {
+    return (
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Authenticating..." />
+      </PageWrapper>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-app flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-app rounded-xl shadow-sm border border-stone-200 p-8">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-4">💍</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome to Unveil
-          </h1>
+    <PageWrapper>
+      <CardContainer>
+        {/* Header with Logo */}
+        <div className="text-center mb-6">
+          <LogoContainer />
+          <PageTitle>Welcome to Unveil</PageTitle>
           {step === 'phone' ? (
-            <p className="text-gray-600">Enter your phone number to continue</p>
+            <SubTitle>Enter your phone number to continue</SubTitle>
           ) : (
             <div>
-              <p className="text-gray-600 mb-2">
+              <SubTitle className="mb-2">
                 Enter the verification code sent to
-              </p>
+              </SubTitle>
               <p className="text-gray-900 font-medium">{phone}</p>
             </div>
           )}
         </div>
 
         {step === 'phone' ? (
-          <form onSubmit={handlePhoneSubmit} className="space-y-6">
-            <Input
-              id="phone"
-              label="Phone Number"
-              type="tel"
-              value={phone}
-              onChange={handlePhoneChange}
-              placeholder="(555) 123-4567"
-              disabled={loading}
-              error={error}
-              isRequired
-            />
+          <form onSubmit={handlePhoneSubmit} className="space-y-5">
+            <div>
+              <FieldLabel htmlFor="phone" required>
+                Phone Number
+              </FieldLabel>
+              <PhoneNumberInput
+                id="phone"
+                value={phone}
+                onChange={handlePhoneChange}
+                disabled={loading}
+                error={error}
+              />
+            </div>
 
-            <Button
+            <PrimaryButton
               type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
               disabled={loading || !phone.trim()}
-              isLoading={loading}
+              loading={loading}
             >
-              {loading ? 'Authenticating...' : 'Continue'}
-            </Button>
-
-            {process.env.NODE_ENV !== 'production' && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-                <div className="font-semibold mb-1">🚀 Development Mode</div>
-                <div>Use test numbers for instant authentication:</div>
-                <div className="mt-1 font-mono text-blue-900">
-                  (555) 000-0001 • (555) 000-0002 • (555) 000-0003
-                </div>
-              </div>
-            )}
+              Continue
+            </PrimaryButton>
           </form>
         ) : (
-          <form onSubmit={handleOtpSubmit} className="space-y-6">
-            <Input
-              id="otp"
-              label="Verification Code"
-              type="text"
-              value={otp}
-              onChange={handleOtpChange}
-              placeholder="123456"
-              disabled={loading}
-              error={error}
-              isRequired
-              maxLength={6}
-              className="text-center text-lg font-mono tracking-widest"
-            />
+          <form onSubmit={handleOtpSubmit} className="space-y-5">
+            <div>
+              <FieldLabel htmlFor="otp" required>
+                Verification Code
+              </FieldLabel>
+              <OTPInput
+                id="otp"
+                value={otp}
+                onChange={handleOtpChange}
+                disabled={loading}
+                error={error}
+              />
+            </div>
 
             {isDev && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
@@ -269,52 +246,42 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-3">
-              <Button
+              <PrimaryButton
                 type="submit"
-                variant="primary"
-                size="lg"
-                className="w-full"
                 disabled={loading || otp.length !== 6}
-                isLoading={loading}
+                loading={loading}
               >
-                {loading ? 'Verifying...' : 'Verify Code'}
-              </Button>
+                Verify Code
+              </PrimaryButton>
 
-              <Button
+              <SecondaryButton
                 type="button"
-                variant="ghost"
-                size="lg"
-                className="w-full"
                 onClick={handleBackToPhone}
                 disabled={loading}
               >
                 Change Phone Number
-              </Button>
+              </SecondaryButton>
             </div>
           </form>
         )}
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          {step === 'phone' ? (
-            <p>
-              New to Unveil? Don&apos;t worry - we&apos;ll create your account
-              automatically.
-            </p>
-          ) : (
-            <p>Didn&apos;t receive a code? Wait 60 seconds and try again.</p>
-          )}
+        {/* Microcopy */}
+        <div className="mt-6">
+          <MicroCopy>
+            {step === 'phone' 
+              ? "First time here? Just enter your phone — we'll set everything up for you automatically."
+              : "Didn't receive a code? Wait 60 seconds and try again."
+            }
+          </MicroCopy>
         </div>
 
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
-            <strong>Development Mode:</strong> Using phone-based OTP
-            authentication
-            <br />
-            <strong>Test phones:</strong> +15550000001, +15550000002,
-            +15550000003
-          </div>
-        )}
-      </div>
-    </div>
+        {/* Development Mode */}
+        <DevModeBox>
+          <p>Use test numbers for instant authentication:</p>
+          <p className="font-mono text-blue-800">(555) 000-0001 • (555) 000-0002 • (555) 000-0003</p>
+          <p className="mt-2">Using phone-based OTP authentication — test phones: +15550000001, +15550000002, +15550000003</p>
+        </DevModeBox>
+      </CardContainer>
+    </PageWrapper>
   );
 }

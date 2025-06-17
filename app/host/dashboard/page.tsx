@@ -3,12 +3,23 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Added for potential redirects
-import { supabase } from '@/lib/supabase/client'; // Added for session
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import { useHostEvents } from '@/hooks/events';
+import { formatEventDate } from '@/lib/utils/date';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  SectionTitle,
+  PrimaryButton,
+  MicroCopy,
+  DevModeBox,
+  LoadingSpinner
+} from '@/components/ui';
 
 export default function HostDashboardPage() {
-  // Renamed component for clarity
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -38,114 +49,127 @@ export default function HostDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-stone-600">Loading your dashboard...</p>
-        </div>
-      </div>
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Loading your dashboard..." />
+      </PageWrapper>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <h1 className="text-2xl font-semibold text-stone-800 mb-4">
-            We couldn&apos;t load your dashboard. Please try again.
-          </h1>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-900 transition-colors font-medium"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <PageWrapper>
+        <CardContainer>
+          <div className="text-center space-y-4">
+            <PageTitle>Dashboard Error</PageTitle>
+            <SubTitle>
+              We couldn&apos;t load your dashboard. Please try again.
+            </SubTitle>
+            <PrimaryButton onClick={() => window.location.reload()}>
+              Try Again
+            </PrimaryButton>
+          </div>
+        </CardContainer>
+      </PageWrapper>
     );
   }
 
   const validHostedEvents = hostedEvents || [];
 
   return (
-    <div className="min-h-screen bg-app">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-semibold text-stone-800 mb-2">
-              Host Dashboard
-            </h1>
-            <p className="text-stone-600">
-              Manage your wedding events and connect with guests
-            </p>
+    <PageWrapper centered={false}>
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <CardContainer maxWidth="xl" className="mb-8">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div className="flex-1">
+              <PageTitle className="text-left">Host Dashboard</PageTitle>
+              <SubTitle>Manage your wedding events and connect with guests</SubTitle>
+            </div>
+            <div className="md:flex-shrink-0">
+              <Link href="/host/events/create">
+                <PrimaryButton fullWidth={false} className="md:min-w-[200px]">
+                  + Create New Event
+                </PrimaryButton>
+              </Link>
+            </div>
           </div>
-          <Link
-            href="/host/events/create"
-            className="inline-flex items-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200"
-          >
-            Create New Event
-          </Link>
-        </div>
+        </CardContainer>
 
+        {/* Events Section */}
         <section>
-          <h2 className="text-xl font-medium text-stone-800 mb-6">
-            Your Events
-          </h2>
+          <div className="mb-6">
+            <SectionTitle>Your Events</SectionTitle>
+          </div>
+          
           {validHostedEvents.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {validHostedEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-app rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-all duration-200"
-                >
-                  <Link
+                <CardContainer key={event.id} maxWidth="xl" animated={false}>
+                  <Link 
                     href={`/host/events/${event.id}/dashboard`}
-                    className="block"
+                    className="block group"
                   >
-                    <h3 className="text-xl font-medium text-stone-800 hover:text-stone-900 transition-colors mb-2">
-                      {event.title}
-                    </h3>
-                    {event.event_date && (
-                      <p className="text-stone-600 mb-1">
-                        {new Date(event.event_date).toLocaleDateString(
-                          'en-US',
-                          {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          },
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-semibold text-gray-900 group-hover:text-[#FF6B6B] transition-colors duration-200">
+                        {event.title}
+                      </h3>
+                      
+                      <div className="space-y-2">
+                        {event.event_date && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span>📅</span>
+                            <span>{formatEventDate(event.event_date)}</span>
+                          </div>
                         )}
-                      </p>
-                    )}
-                    {event.location && (
-                      <p className="text-stone-500">{event.location}</p>
-                    )}
+                        
+                        {event.location && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span>📍</span>
+                            <span>{event.location}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="text-gray-400 group-hover:text-[#FF6B6B] transition-colors duration-200">
+                          <span className="text-sm">Click to manage event →</span>
+                        </div>
+                      </div>
+                    </div>
                   </Link>
-                </div>
+                </CardContainer>
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <h3 className="text-2xl font-semibold text-stone-800 mb-4">
-                No events yet
-              </h3>
-              <p className="text-stone-600 mb-2">
-                You haven&apos;t created any wedding events yet.
-              </p>
-              <p className="text-stone-500 mb-6">
-                Get started by creating your first wedding hub.
-              </p>
-              <Link
-                href="/host/events/create"
-                className="inline-flex items-center px-6 py-3 bg-stone-800 text-white font-medium rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 transition-all duration-200"
-              >
-                Create Your First Event
-              </Link>
-            </div>
+            <CardContainer maxWidth="xl">
+              <div className="text-center py-12 space-y-6">
+                <div className="text-6xl mb-4">🎊</div>
+                <div className="space-y-2">
+                  <SectionTitle>No Events Yet</SectionTitle>
+                  <SubTitle>You haven&apos;t created any wedding events yet.</SubTitle>
+                  <MicroCopy>Get started by creating your first wedding hub.</MicroCopy>
+                </div>
+                
+                <div className="pt-4">
+                  <Link href="/host/events/create">
+                    <PrimaryButton fullWidth={false}>
+                      Create Your First Event
+                    </PrimaryButton>
+                  </Link>
+                </div>
+              </div>
+            </CardContainer>
           )}
         </section>
+
+        {/* Development Mode */}
+        <DevModeBox>
+          <p><strong>User ID:</strong> {currentUserId}</p>
+          <p><strong>Events Found:</strong> {validHostedEvents.length}</p>
+          <p><strong>Loading State:</strong> {loading ? 'true' : 'false'}</p>
+          {error && <p><strong>Error:</strong> {error}</p>}
+        </DevModeBox>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

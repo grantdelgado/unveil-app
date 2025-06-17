@@ -3,6 +3,17 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  FieldLabel,
+  TextInput,
+  PrimaryButton,
+  LoadingSpinner,
+  DevModeBox
+} from '@/components/ui';
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('');
@@ -33,32 +44,72 @@ function ResetPasswordForm() {
   };
 
   return (
-    <form onSubmit={handleUpdate} className="p-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Set a New Password</h2>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="New password"
-        className="border px-4 py-2 w-full rounded mb-2"
-        required
-        disabled={isLoading}
-      />
-      <button
-        type="submit"
-        className="bg-black text-white px-4 py-2 rounded w-full disabled:opacity-50"
-        disabled={isLoading}
-      >
-        {isLoading ? 'Updating...' : 'Update Password'}
-      </button>
-      {message && <p className="mt-2 text-gray-600">{message}</p>}
-    </form>
+    <PageWrapper>
+      <CardContainer>
+        <div className="space-y-6">
+          <div className="text-center space-y-3">
+            <div className="text-4xl">🔒</div>
+            <PageTitle>Set a New Password</PageTitle>
+            <SubTitle>Enter your new password below</SubTitle>
+          </div>
+
+          <form onSubmit={handleUpdate} className="space-y-5">
+            <div className="space-y-2">
+              <FieldLabel htmlFor="password" required>
+                New Password
+              </FieldLabel>
+              <TextInput
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your new password"
+                disabled={isLoading}
+                required
+              />
+            </div>
+
+            <PrimaryButton
+              type="submit"
+              disabled={isLoading}
+              loading={isLoading}
+            >
+              {isLoading ? 'Updating...' : 'Update Password'}
+            </PrimaryButton>
+
+            {message && (
+              <div
+                className={`p-4 rounded-lg text-center text-sm ${
+                  message.includes('Error')
+                    ? 'bg-red-50 text-red-700 border border-red-100'
+                    : 'bg-green-50 text-green-700 border border-green-100'
+                }`}
+              >
+                {message}
+              </div>
+            )}
+          </form>
+        </div>
+
+        <DevModeBox>
+          <p><strong>Reset Password State:</strong></p>
+          <p>Access Token: {searchParams.get('access_token') ? 'present' : 'missing'}</p>
+          <p>Loading: {isLoading ? 'true' : 'false'}</p>
+          <p>Message: {message || 'none'}</p>
+          <p>Password Length: {password.length} characters</p>
+        </DevModeBox>
+      </CardContainer>
+    </PageWrapper>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Loading password reset..." />
+      </PageWrapper>
+    }>
       <ResetPasswordForm />
     </Suspense>
   );

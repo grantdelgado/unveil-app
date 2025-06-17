@@ -4,9 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/Button';
-import { LoadingPage } from '@/components/ui/LoadingSpinner';
-import { GuestImportWizard } from '@/components/features/guests';
 import { formatEventDate } from '@/lib/utils';
 import type { Database } from '@/app/reference/supabase.types';
 import {
@@ -18,6 +15,17 @@ import {
   SMSTestPanel,
 } from '@/components/features/host-dashboard';
 import { WelcomeBanner } from '@/components/features/events';
+import { GuestImportWizard } from '@/components/features/guests';
+import {
+  PageWrapper,
+  CardContainer,
+  PageTitle,
+  SubTitle,
+  PrimaryButton,
+  SecondaryButton,
+  LoadingSpinner,
+  DevModeBox
+} from '@/components/ui';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -141,57 +149,66 @@ export default function EventDashboardPage() {
   };
 
   if (loading) {
-    return <LoadingPage />;
+    return (
+      <PageWrapper>
+        <LoadingSpinner size="lg" text="Loading event dashboard..." />
+      </PageWrapper>
+    );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-stone-200 p-8 text-center">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h1 className="text-xl font-semibold text-stone-800 mb-2">
-            Unable to Load Event
-          </h1>
-          <p className="text-stone-600 mb-6">{error}</p>
-          <div className="space-y-3">
-            <Button onClick={() => window.location.reload()} className="w-full">
-              Try Again
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/select-event')}
-              className="w-full"
-            >
-              Back to Events
-            </Button>
+      <PageWrapper>
+        <CardContainer>
+          <div className="text-center space-y-6">
+            <div className="text-4xl">⚠️</div>
+            <div className="space-y-2">
+              <PageTitle>Unable to Load Event</PageTitle>
+              <SubTitle>{error}</SubTitle>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <PrimaryButton onClick={() => window.location.reload()} fullWidth={false}>
+                Try Again
+              </PrimaryButton>
+              <SecondaryButton 
+                onClick={() => router.push('/select-event')}
+                fullWidth={false}
+              >
+                Back to Events
+              </SecondaryButton>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContainer>
+      </PageWrapper>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🤔</div>
-          <h1 className="text-xl font-semibold text-stone-800 mb-2">
-            Event Not Found
-          </h1>
-          <p className="text-stone-600 mb-6">
-            The event you&apos;re looking for doesn&apos;t exist or you
-            don&apos;t have access to it.
-          </p>
-          <Button onClick={() => router.push('/select-event')}>
-            Back to Events
-          </Button>
-        </div>
-      </div>
+      <PageWrapper>
+        <CardContainer>
+          <div className="text-center space-y-6">
+            <div className="text-4xl">🤔</div>
+            <div className="space-y-2">
+              <PageTitle>Event Not Found</PageTitle>
+              <SubTitle>
+                The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+              </SubTitle>
+            </div>
+            <PrimaryButton 
+              onClick={() => router.push('/select-event')}
+              fullWidth={false}
+            >
+              Back to Events
+            </PrimaryButton>
+          </div>
+        </CardContainer>
+      </PageWrapper>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <PageWrapper centered={false}>
       {/* Guest Import Modal */}
       {showGuestImport && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -208,15 +225,15 @@ export default function EventDashboardPage() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white border-b border-stone-200">
-          <div className="px-6 py-8">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-4 mb-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Event Header */}
+        <CardContainer maxWidth="xl" className="border-b-0 rounded-b-none">
+          <div className="space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <div className="flex-1 space-y-4">
+                <div className="flex items-start gap-4">
                   {event.header_image_url && (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
                         src={event.header_image_url}
                         alt={event.title}
@@ -226,19 +243,17 @@ export default function EventDashboardPage() {
                       />
                     </div>
                   )}
-                  <div>
-                    <h1 className="text-3xl font-bold text-stone-800 mb-2">
-                      {event.title}
-                    </h1>
-                    <div className="flex items-center space-x-4 text-stone-600">
-                      <div className="flex items-center">
-                        <span className="text-xl mr-2">📅</span>
-                        {formatEventDate(event.event_date)}
+                  <div className="min-w-0 flex-1">
+                    <PageTitle className="text-left mb-3">{event.title}</PageTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">📅</span>
+                        <span>{formatEventDate(event.event_date)}</span>
                       </div>
                       {event.location && (
-                        <div className="flex items-center">
-                          <span className="text-xl mr-2">📍</span>
-                          {event.location}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">📍</span>
+                          <span>{event.location}</span>
                         </div>
                       )}
                     </div>
@@ -246,21 +261,21 @@ export default function EventDashboardPage() {
                 </div>
 
                 {event.description && (
-                  <p className="text-stone-600 max-w-2xl">
+                  <SubTitle className="max-w-2xl">
                     {event.description}
-                  </p>
+                  </SubTitle>
                 )}
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
                 <QuickActions eventId={eventId} />
               </div>
             </div>
           </div>
-        </div>
+        </CardContainer>
 
         {/* Welcome Banner */}
-        <div className="px-6 py-6">
+        <div className="px-6 lg:px-0">
           <WelcomeBanner
             guestCount={participantCount}
             onImportGuests={() => setShowGuestImport(true)}
@@ -269,76 +284,72 @@ export default function EventDashboardPage() {
         </div>
 
         {/* Notifications */}
-        <div className="px-6 mb-6">
+        <div className="px-6 lg:px-0">
           <NotificationCenter eventId={eventId} />
         </div>
 
-        {/* Main Content */}
-        <div className="px-6 pb-20">
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-            {/* Tabs */}
-            <div className="border-b border-stone-200">
-              <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        {/* Main Dashboard Content */}
+        <CardContainer maxWidth="xl" className="overflow-hidden">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 -mx-6 px-6">
+            <nav className="flex space-x-8" aria-label="Dashboard tabs">
+              {[
+                { key: 'overview', label: '📊 Overview' },
+                { key: 'guests', label: '👥 Participants' },
+                { key: 'messages', label: '💬 Messages' }
+              ].map((tab) => (
                 <button
-                  onClick={() => setActiveTab('overview')}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'overview'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+                    activeTab === tab.key
+                      ? 'border-[#FF6B6B] text-[#FF6B6B]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  📊 Overview
+                  {tab.label}
                 </button>
-
-                <button
-                  onClick={() => setActiveTab('guests')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'guests'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-                  }`}
-                >
-                  👥 Participants
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('messages')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'messages'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-                  }`}
-                >
-                  💬 Messages
-                </button>
-              </nav>
-            </div>
-
-            <div className="p-6">
-              {activeTab === 'overview' && <EventAnalytics eventId={eventId} />}
-
-              {activeTab === 'guests' && (
-                <GuestManagement
-                  eventId={eventId}
-                  onGuestUpdated={handleDataRefresh}
-                />
-              )}
-
-              {activeTab === 'messages' && (
-                <div className="space-y-6">
-                  <MessageComposer
-                    eventId={eventId}
-                    onMessageSent={() => {
-                      console.log('Message sent successfully!');
-                    }}
-                  />
-                  <SMSTestPanel eventId={eventId} />
-                </div>
-              )}
-            </div>
+              ))}
+            </nav>
           </div>
-        </div>
+
+          {/* Tab Content */}
+          <div className="py-6">
+            {activeTab === 'overview' && <EventAnalytics eventId={eventId} />}
+
+            {activeTab === 'guests' && (
+              <GuestManagement
+                eventId={eventId}
+                onGuestUpdated={handleDataRefresh}
+              />
+            )}
+
+            {activeTab === 'messages' && (
+              <div className="space-y-6">
+                <MessageComposer
+                  eventId={eventId}
+                  onMessageSent={() => {
+                    console.log('Message sent successfully!');
+                  }}
+                />
+                <SMSTestPanel eventId={eventId} />
+              </div>
+            )}
+          </div>
+        </CardContainer>
+
+        {/* Development Mode */}
+        <DevModeBox>
+          <p><strong>Event Dashboard State:</strong></p>
+          <p>Event ID: {eventId}</p>
+          <p>Event Title: {event?.title || 'N/A'}</p>
+          <p>Active Tab: {activeTab}</p>
+          <p>Participant Count: {participantCount}</p>
+          <p>Guest Import Modal: {showGuestImport ? 'open' : 'closed'}</p>
+          <p>Loading: {loading ? 'true' : 'false'}</p>
+          {error && <p className="text-red-600">Error: {error}</p>}
+        </DevModeBox>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
