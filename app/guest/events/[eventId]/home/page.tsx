@@ -16,6 +16,7 @@ import {
   FieldLabel,
   PrimaryButton,
   SecondaryButton,
+  BackButton,
   MicroCopy,
   LoadingSpinner,
   DevModeBox
@@ -209,15 +210,15 @@ export default function GuestEventHomePage() {
           <div
             className={`transition-all duration-300 ${isScrolled ? 'py-3' : 'py-6'}`}
           >
-            <SecondaryButton
-              onClick={() => router.push('/select-event')}
-              fullWidth={false}
-              className={`mb-3 transition-all duration-300 ${
-                isScrolled ? 'text-sm' : ''
-              }`}
-            >
-              ← Your Events
-            </SecondaryButton>
+            <div className={`mb-3 transition-all duration-300 ${isScrolled ? 'text-sm' : ''}`}>
+              <BackButton 
+                href="/select-event"
+                variant="subtle"
+                className={isScrolled ? 'text-xs py-1 px-2' : ''}
+              >
+                Your Events
+              </BackButton>
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <h1

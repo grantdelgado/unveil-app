@@ -14,6 +14,7 @@ import {
   TextInput,
   PrimaryButton,
   SecondaryButton,
+  BackButton,
   MicroCopy,
   LoadingSpinner,
   DevModeBox
@@ -120,6 +121,16 @@ export default function AccountSetupPage() {
     <PageWrapper>
       <CardContainer>
         <div className="space-y-6">
+          {/* Back Navigation */}
+          <div className="flex justify-start">
+            <BackButton 
+              href="/login"
+              variant="subtle"
+            >
+              Back to Login
+            </BackButton>
+          </div>
+
           <div className="text-center space-y-4">
             <div className="text-4xl">👋</div>
             <PageTitle>Welcome to Unveil!</PageTitle>

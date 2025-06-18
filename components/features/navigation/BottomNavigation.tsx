@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
-import { RoleSwitcher } from './RoleSwitcher';
+import { SmartRoleSwitcher } from './SmartRoleSwitcher';
 import { useEventSubscription } from '@/hooks/realtime';
 
 interface BottomNavigationProps {
@@ -229,7 +229,7 @@ export function BottomNavigation({
           <div className="flex items-center space-x-2">
             {/* Role Switcher */}
             <div className="shrink-0">
-              <RoleSwitcher currentEventId={eventId} currentRole={userRole} />
+                              <SmartRoleSwitcher currentEventId={eventId} currentRole={userRole} />
             </div>
 
             {/* Mode indicator icon */}

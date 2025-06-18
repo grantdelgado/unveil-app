@@ -14,6 +14,7 @@ import {
   TextInput,
   PrimaryButton,
   SecondaryButton,
+  BackButton,
   MicroCopy,
   DevModeBox
 } from '@/components/ui';
@@ -76,14 +77,12 @@ export default function ProfilePage() {
         {/* Header */}
         <CardContainer maxWidth="xl">
           <div className="flex items-center justify-between">
-            <SecondaryButton
-              onClick={() => router.push('/select-event')}
-              fullWidth={false}
-              className="flex items-center gap-2"
+            <BackButton 
+              href="/select-event"
+              variant="subtle"
             >
-              <span className="text-xl">←</span>
               Back to Events
-            </SecondaryButton>
+            </BackButton>
           </div>
         </CardContainer>
 

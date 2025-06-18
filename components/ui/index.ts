@@ -24,6 +24,7 @@ export {
   SecondaryButton, 
   IconButton 
 } from './UnveilButton';
+export { BackButton } from './BackButton';
 
 // Utility Components
 export { DevModeBox } from './DevModeBox';

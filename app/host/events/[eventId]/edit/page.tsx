@@ -17,7 +17,7 @@ import {
   FieldLabel,
   TextInput,
   PrimaryButton,
-  SecondaryButton,
+  BackButton,
   MicroCopy,
   DevModeBox,
   LoadingSpinner
@@ -389,6 +389,16 @@ export default function EditEventPage() {
   return (
     <PageWrapper centered={false}>
       <div className="max-w-3xl mx-auto">
+        {/* Back Navigation */}
+        <div className="mb-6">
+          <BackButton 
+            href={`/host/events/${eventId}/dashboard`}
+            fallback="/host/dashboard"
+          >
+            Back to Dashboard
+          </BackButton>
+        </div>
+
         {/* Header */}
         <CardContainer maxWidth="xl" className="mb-8">
           <div className="text-center space-y-4">
@@ -714,16 +724,7 @@ export default function EditEventPage() {
           </form>
         </CardContainer>
 
-        {/* Back Navigation */}
-        <div className="text-center mt-6">
-          <SecondaryButton
-            onClick={() => router.push(`/host/events/${eventId}/dashboard`)}
-            disabled={isLoading}
-            fullWidth={false}
-          >
-            ← Cancel and Back to Dashboard
-          </SecondaryButton>
-        </div>
+
 
         {/* Development Mode */}
         <DevModeBox>
