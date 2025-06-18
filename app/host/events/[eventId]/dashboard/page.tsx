@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { formatEventDate } from '@/lib/utils';
 import type { Database } from '@/app/reference/supabase.types';
 import {
+  EventHeader,
+  GuestStatusCard,
+  QuickMessageActions,
+  TabNavigation,
   GuestManagement,
   MessageComposer,
-  EventAnalytics,
   QuickActions,
-  NotificationCenter,
   SMSTestPanel,
+  type TabItem,
 } from '@/components/features/host-dashboard';
-import { WelcomeBanner } from '@/components/features/events';
 import { GuestImportWizard } from '@/components/features/guests';
 import {
   PageWrapper,
@@ -23,7 +23,6 @@ import {
   SubTitle,
   PrimaryButton,
   SecondaryButton,
-  LoadingSpinner,
   DevModeBox
 } from '@/components/ui';
 
@@ -34,13 +33,30 @@ export default function EventDashboardPage() {
   const router = useRouter();
   const eventId = params.eventId as string;
 
+  // Core state
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('guests'); // Default to guests for MVP
   const [showGuestImport, setShowGuestImport] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
 
+  // Tab configuration for MVP - only Guests and Messages
+  const tabs: TabItem[] = [
+    {
+      key: 'guests',
+      label: 'Participants',
+      icon: '👥',
+      badge: participantCount > 0 ? undefined : 1, // Show badge if no participants yet
+    },
+    {
+      key: 'messages',
+      label: 'Messages',
+      icon: '💬',
+    },
+  ];
+
+  // Fetch event data and participant count
   useEffect(() => {
     if (!eventId) return;
 
@@ -103,43 +119,37 @@ export default function EventDashboardPage() {
     fetchEventData();
   }, [eventId, router]);
 
+  // Listen for external tab change events (from bottom navigation)
   useEffect(() => {
-    // Listen for navigation tab changes from bottom navigation
-    const handleNavigationTabChange = (event: CustomEvent) => {
-      if (event.detail?.tab) {
+    const handleTabChange = (event: CustomEvent) => {
+      if (event.detail?.tab && ['guests', 'messages'].includes(event.detail.tab)) {
         setActiveTab(event.detail.tab);
       }
     };
 
-    const handleDashboardTabChange = (event: CustomEvent) => {
-      if (event.detail?.tab) {
-        setActiveTab(event.detail.tab);
-      }
-    };
-
-    window.addEventListener(
-      'navigationTabChange',
-      handleNavigationTabChange as EventListener,
-    );
-    window.addEventListener(
-      'dashboardTabChange',
-      handleDashboardTabChange as EventListener,
-    );
+    ['navigationTabChange', 'dashboardTabChange'].forEach(eventType => {
+      window.addEventListener(eventType, handleTabChange as EventListener);
+    });
 
     return () => {
-      window.removeEventListener(
-        'navigationTabChange',
-        handleNavigationTabChange as EventListener,
-      );
-      window.removeEventListener(
-        'dashboardTabChange',
-        handleDashboardTabChange as EventListener,
-      );
+      ['navigationTabChange', 'dashboardTabChange'].forEach(eventType => {
+        window.removeEventListener(eventType, handleTabChange as EventListener);
+      });
     };
   }, []);
 
+  // Handle tab changes with event dispatch for bottom navigation sync
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    
+    // Dispatch event for bottom navigation sync
+    window.dispatchEvent(new CustomEvent('dashboardTabChange', { 
+      detail: { tab: newTab } 
+    }));
+  };
+
+  // Handle data refresh after guest management actions
   const handleDataRefresh = async () => {
-    // Refresh participant count
     const { data: participantData } = await supabase
       .from('event_participants')
       .select('id')
@@ -148,28 +158,59 @@ export default function EventDashboardPage() {
     setParticipantCount(participantData?.length || 0);
   };
 
+  // Handle quick message actions
+  const handleQuickMessage = (messageType: 'announcement' | 'reminder' | 'custom') => {
+    // Switch to messages tab and focus on the appropriate action
+    setActiveTab('messages');
+    console.log(`Quick message action: ${messageType}`);
+    // TODO: Phase 4 will implement specific message templates
+  };
+
+  // Loading state with skeleton
   if (loading) {
     return (
-      <PageWrapper>
-        <LoadingSpinner size="lg" text="Loading event dashboard..." />
+      <PageWrapper centered={false}>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <CardContainer maxWidth="xl" className="animate-pulse">
+            <div className="space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </CardContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <CardContainer key={i} className="animate-pulse">
+                <div className="space-y-3">
+                  <div className="h-6 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+              </CardContainer>
+            ))}
+          </div>
+        </div>
       </PageWrapper>
     );
   }
 
-  if (error) {
+  // Error and not found states
+  if (error || !event) {
     return (
       <PageWrapper>
         <CardContainer>
           <div className="text-center space-y-6">
-            <div className="text-4xl">⚠️</div>
+            <div className="text-4xl">{error ? '⚠️' : '🤔'}</div>
             <div className="space-y-2">
-              <PageTitle>Unable to Load Event</PageTitle>
-              <SubTitle>{error}</SubTitle>
+              <PageTitle>{error ? 'Unable to Load Event' : 'Event Not Found'}</PageTitle>
+              <SubTitle>
+                {error || "The event you're looking for doesn't exist or you don't have access to it."}
+              </SubTitle>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <PrimaryButton onClick={() => window.location.reload()} fullWidth={false}>
-                Try Again
-              </PrimaryButton>
+              {error && (
+                <PrimaryButton onClick={() => window.location.reload()} fullWidth={false}>
+                  Try Again
+                </PrimaryButton>
+              )}
               <SecondaryButton 
                 onClick={() => router.push('/select-event')}
                 fullWidth={false}
@@ -183,30 +224,7 @@ export default function EventDashboardPage() {
     );
   }
 
-  if (!event) {
-    return (
-      <PageWrapper>
-        <CardContainer>
-          <div className="text-center space-y-6">
-            <div className="text-4xl">🤔</div>
-            <div className="space-y-2">
-              <PageTitle>Event Not Found</PageTitle>
-              <SubTitle>
-                The event you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
-              </SubTitle>
-            </div>
-            <PrimaryButton 
-              onClick={() => router.push('/select-event')}
-              fullWidth={false}
-            >
-              Back to Events
-            </PrimaryButton>
-          </div>
-        </CardContainer>
-      </PageWrapper>
-    );
-  }
-
+  // Main dashboard layout
   return (
     <PageWrapper centered={false}>
       {/* Guest Import Modal */}
@@ -225,98 +243,35 @@ export default function EventDashboardPage() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Event Header */}
-        <CardContainer maxWidth="xl" className="border-b-0 rounded-b-none">
-          <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div className="flex-1 space-y-4">
-                <div className="flex items-start gap-4">
-                  {event.header_image_url && (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                      <Image
-                        src={event.header_image_url}
-                        alt={event.title}
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <PageTitle className="text-left mb-3">{event.title}</PageTitle>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">📅</span>
-                        <span>{formatEventDate(event.event_date)}</span>
-                      </div>
-                      {event.location && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">📍</span>
-                          <span>{event.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Event Header with QuickActions */}
+        <EventHeader event={event} participantCount={participantCount}>
+          <QuickActions eventId={eventId} />
+        </EventHeader>
 
-                {event.description && (
-                  <SubTitle className="max-w-2xl">
-                    {event.description}
-                  </SubTitle>
-                )}
-              </div>
-
-              <div className="flex-shrink-0">
-                <QuickActions eventId={eventId} />
-              </div>
-            </div>
-          </div>
-        </CardContainer>
-
-        {/* Welcome Banner */}
-        <div className="px-6 lg:px-0">
-          <WelcomeBanner
-            guestCount={participantCount}
-            onImportGuests={() => setShowGuestImport(true)}
-            onSendFirstMessage={() => setActiveTab('messages')}
+        {/* Priority Action Cards - Mobile-First Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <GuestStatusCard 
+            eventId={eventId} 
+            onManageClick={() => handleTabChange('guests')} 
+          />
+          <QuickMessageActions 
+            eventId={eventId}
+            onSendMessage={handleQuickMessage}
+            onComposeClick={() => handleTabChange('messages')}
           />
         </div>
 
-        {/* Notifications */}
-        <div className="px-6 lg:px-0">
-          <NotificationCenter eventId={eventId} />
-        </div>
-
-        {/* Main Dashboard Content */}
+        {/* Main Content with Tab Navigation */}
         <CardContainer maxWidth="xl" className="overflow-hidden">
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 -mx-6 px-6">
-            <nav className="flex space-x-8" aria-label="Dashboard tabs">
-              {[
-                { key: 'overview', label: '📊 Overview' },
-                { key: 'guests', label: '👥 Participants' },
-                { key: 'messages', label: '💬 Messages' }
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.key
-                      ? 'border-[#FF6B6B] text-[#FF6B6B]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
+          <TabNavigation 
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
 
           {/* Tab Content */}
           <div className="py-6">
-            {activeTab === 'overview' && <EventAnalytics eventId={eventId} />}
-
             {activeTab === 'guests' && (
               <GuestManagement
                 eventId={eventId}
@@ -332,22 +287,18 @@ export default function EventDashboardPage() {
                     console.log('Message sent successfully!');
                   }}
                 />
-                <SMSTestPanel eventId={eventId} />
+                {/* Development mode SMS testing */}
+                {process.env.NODE_ENV === 'development' && (
+                  <SMSTestPanel eventId={eventId} />
+                )}
               </div>
             )}
           </div>
         </CardContainer>
 
-        {/* Development Mode */}
+        {/* Development Mode Info */}
         <DevModeBox>
-          <p><strong>Event Dashboard State:</strong></p>
-          <p>Event ID: {eventId}</p>
-          <p>Event Title: {event?.title || 'N/A'}</p>
-          <p>Active Tab: {activeTab}</p>
-          <p>Participant Count: {participantCount}</p>
-          <p>Guest Import Modal: {showGuestImport ? 'open' : 'closed'}</p>
-          <p>Loading: {loading ? 'true' : 'false'}</p>
-          {error && <p className="text-red-600">Error: {error}</p>}
+          <p><strong>Host Dashboard:</strong> {event?.title} | Tab: {activeTab} | Guests: {participantCount}</p>
         </DevModeBox>
       </div>
     </PageWrapper>
