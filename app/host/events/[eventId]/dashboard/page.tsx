@@ -276,6 +276,8 @@ export default function EventDashboardPage() {
               <GuestManagement
                 eventId={eventId}
                 onGuestUpdated={handleDataRefresh}
+                onImportGuests={() => setShowGuestImport(true)}
+                onSendMessage={handleQuickMessage}
               />
             )}
 

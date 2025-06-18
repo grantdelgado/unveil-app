@@ -4,6 +4,10 @@ export { GuestStatusCard } from './GuestStatusCard';
 export { QuickMessageActions } from './QuickMessageActions';
 export { TabNavigation, type TabItem } from './TabNavigation';
 
+// Phase 3 Components - Enhanced Guest Management
+export { GuestStatusSummary } from './GuestStatusSummary';
+export { BulkActionShortcuts } from './BulkActionShortcuts';
+
 // Existing Components
 export { GuestManagement } from './GuestManagement';
 export { MessageComposer } from './MessageComposer';
