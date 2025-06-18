@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { SecondaryButton, CardContainer } from '@/components/ui';
 import { GuestStatusSummary } from './GuestStatusSummary';
 import { BulkActionShortcuts } from './BulkActionShortcuts';
 import { cn } from '@/lib/utils';
+import { useHapticFeedback, usePullToRefresh, useDebounce } from '@/hooks/common';
 import type { Database } from '@/app/reference/supabase.types';
 
 type Participant = Database['public']['Tables']['event_participants']['Row'] & {
@@ -29,9 +30,24 @@ export function GuestManagement({
   const [loading, setLoading] = useState(true);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
   
-  // Enhanced filtering and search
+  // Enhanced filtering and search with debouncing
   const [searchTerm, setSearchTerm] = useState('');
   const [filterByRSVP, setFilterByRSVP] = useState('all');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms debounce
+
+  // Interaction enhancements
+  const { triggerHaptic } = useHapticFeedback();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Pull-to-refresh functionality
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: async () => {
+      await fetchData();
+      triggerHaptic('success');
+    },
+    pullThreshold: 60,
+    refreshThreshold: 80
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -57,17 +73,19 @@ export function GuestManagement({
     fetchData();
   }, [fetchData]);
 
-  // Enhanced RSVP update with optimistic updates
+  // Enhanced RSVP update with optimistic updates and haptic feedback
   const handleRSVPUpdate = async (participantId: string, newStatus: string) => {
     try {
-             // Optimistic update
-       setParticipants(prev => 
-         prev.map(p => 
-           p.id === participantId 
-             ? { ...p, rsvp_status: newStatus as 'attending' | 'declined' | 'maybe' | 'pending' }
-             : p
-         )
-       );
+      triggerHaptic('light'); // Immediate feedback
+      
+      // Optimistic update
+      setParticipants(prev => 
+        prev.map(p => 
+          p.id === participantId 
+            ? { ...p, rsvp_status: newStatus as 'attending' | 'declined' | 'maybe' | 'pending' }
+            : p
+        )
+      );
 
       const { error } = await supabase
         .from('event_participants')
@@ -75,9 +93,12 @@ export function GuestManagement({
         .eq('id', participantId);
 
       if (error) throw error;
+      
+      triggerHaptic('success'); // Success feedback
       onGuestUpdated?.();
     } catch (error) {
       console.error('Error updating RSVP:', error);
+      triggerHaptic('error'); // Error feedback
       // Revert optimistic update on error
       await fetchData();
     }
@@ -100,7 +121,7 @@ export function GuestManagement({
     }
   };
 
-  // Bulk actions
+  // Bulk actions with haptic feedback
   const handleMarkAllPendingAsAttending = async () => {
     const pendingParticipants = participants.filter(p => p.rsvp_status === 'pending');
     if (pendingParticipants.length === 0) return;
@@ -108,6 +129,8 @@ export function GuestManagement({
     if (!confirm(`Mark ${pendingParticipants.length} pending participants as attending?`)) return;
 
     try {
+      triggerHaptic('medium'); // Medium feedback for bulk action
+      
       const operations = pendingParticipants.map(p =>
         supabase
           .from('event_participants')
@@ -117,9 +140,11 @@ export function GuestManagement({
 
       await Promise.all(operations);
       await fetchData();
+      triggerHaptic('success'); // Success feedback
       onGuestUpdated?.();
     } catch (error) {
       console.error('Error updating pending RSVPs:', error);
+      triggerHaptic('error');
     }
   };
 
@@ -131,6 +156,8 @@ export function GuestManagement({
     if (selectedParticipants.size === 0) return;
 
     try {
+      triggerHaptic('medium'); // Medium feedback for bulk action
+      
       const operations = Array.from(selectedParticipants).map(participantId =>
         supabase
           .from('event_participants')
@@ -141,47 +168,67 @@ export function GuestManagement({
       await Promise.all(operations);
       await fetchData();
       setSelectedParticipants(new Set());
+      triggerHaptic('success'); // Success feedback
       onGuestUpdated?.();
     } catch (error) {
       console.error('Error updating RSVPs:', error);
+      triggerHaptic('error');
     }
   };
+  
+  // Attach pull-to-refresh listeners
+  useEffect(() => {
+    return pullToRefresh.attachPullToRefreshListeners(containerRef.current);
+  }, [pullToRefresh]);
 
-  // Enhanced filtering
-  const filteredParticipants = participants.filter(participant => {
-    const matchesSearch = !searchTerm || 
-      participant.user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      participant.user?.id?.includes(searchTerm);
+  // Enhanced filtering with memoization
+  const filteredParticipants = useMemo(() => {
+    return participants.filter(participant => {
+      const matchesSearch = !debouncedSearchTerm || 
+        participant.user?.full_name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        participant.user?.id?.includes(debouncedSearchTerm);
 
-    const matchesRSVP = filterByRSVP === 'all' || participant.rsvp_status === filterByRSVP;
-    return matchesSearch && matchesRSVP;
-  });
+      const matchesRSVP = filterByRSVP === 'all' || participant.rsvp_status === filterByRSVP;
+      return matchesSearch && matchesRSVP;
+    });
+  }, [participants, debouncedSearchTerm, filterByRSVP]);
 
-  // Status counts
-  const statusCounts = {
+  // Status counts with memoization
+  const statusCounts = useMemo(() => ({
     total: participants.length,
     attending: participants.filter(p => p.rsvp_status === 'attending').length,
     pending: participants.filter(p => p.rsvp_status === 'pending').length,
     maybe: participants.filter(p => p.rsvp_status === 'maybe').length,
     declined: participants.filter(p => p.rsvp_status === 'declined').length,
-  };
+  }), [participants]);
 
-  const selectAll = () => {
+  const selectAll = useCallback(() => {
     if (selectedParticipants.size === filteredParticipants.length) {
       setSelectedParticipants(new Set());
     } else {
       setSelectedParticipants(new Set(filteredParticipants.map(p => p.id)));
     }
-  };
+  }, [selectedParticipants.size, filteredParticipants]);
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="animate-pulse">
-          <div className="h-16 bg-gray-100 rounded-lg mb-4"></div>
+        {/* Enhanced skeleton with shimmer effect */}
+        <div className="animate-pulse space-y-4">
+          {/* Status pills skeleton */}
+          <div className="flex gap-2 overflow-x-auto">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 w-20 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:200%_100%] animate-shimmer rounded-full flex-shrink-0"></div>
+            ))}
+          </div>
+          
+          {/* Search and filters skeleton */}
+          <div className="h-12 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:200%_100%] animate-shimmer rounded-lg"></div>
+          
+          {/* Guest list skeleton */}
           <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-20 bg-gray-100 rounded-lg"></div>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-20 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:200%_100%] animate-shimmer rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -190,7 +237,34 @@ export function GuestManagement({
   }
 
   return (
-    <div className="space-y-6">
+    <div 
+      ref={containerRef}
+      className="space-y-6 relative"
+      style={{
+        transform: pullToRefresh.isPulling ? `translateY(${Math.min(pullToRefresh.pullDistance, 100)}px)` : 'translateY(0)',
+        transition: pullToRefresh.isPulling ? 'none' : 'transform 200ms ease-out'
+      }}
+    >
+      {/* Pull-to-refresh indicator */}
+      {(pullToRefresh.isPulling || pullToRefresh.isRefreshing) && (
+        <div 
+          className="absolute -top-16 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-gray-500 z-20"
+          style={{
+            opacity: pullToRefresh.pullDistance > 30 ? 1 : pullToRefresh.pullDistance / 30
+          }}
+        >
+          <div className={cn(
+            'w-8 h-8 rounded-full border-2 border-gray-300 border-t-[#FF6B6B] transition-all duration-200',
+            pullToRefresh.isRefreshing && 'animate-spin',
+            pullToRefresh.canRefresh && !pullToRefresh.isRefreshing && 'border-t-green-500'
+          )} />
+          <span className="text-sm font-medium">
+            {pullToRefresh.isRefreshing ? 'Refreshing...' : 
+             pullToRefresh.canRefresh ? 'Release to refresh' : 'Pull to refresh'}
+          </span>
+        </div>
+      )}
+      
       {/* Status Pills - Always at Top */}
       <div>
         <GuestStatusSummary

@@ -8,6 +8,12 @@ export { TabNavigation, type TabItem } from './TabNavigation';
 export { GuestStatusSummary } from './GuestStatusSummary';
 export { BulkActionShortcuts } from './BulkActionShortcuts';
 
+// Phase 4 Components - Enhanced Messaging Center
+export { EnhancedMessageCenter } from './EnhancedMessageCenter';
+export { MessageTemplates, type MessageTemplate } from './MessageTemplates';
+export { RecipientPresets, type RecipientFilter } from './RecipientPresets';
+export { RecentMessages } from './RecentMessages';
+
 // Existing Components
 export { GuestManagement } from './GuestManagement';
 export { MessageComposer } from './MessageComposer';

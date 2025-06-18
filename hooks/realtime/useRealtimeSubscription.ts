@@ -145,51 +145,61 @@ export function useRealtimeSubscription({
       return;
     }
 
+    // Prevent React StrictMode subscription race conditions in development
+    const isDev = process.env.NODE_ENV === 'development';
+    const delay = isDev ? 50 : 0;
+
     logger.realtime(`🔗 Setting up subscription: ${subscriptionId}`);
 
-    try {
-      const config: SubscriptionConfig = {
-        table,
-        event,
-        schema,
-        filter,
-        callback: stableOnDataChange,
-      };
+    // Setup timeout for subscription creation
+    const setupTimeoutId = setTimeout(() => {
+      try {
+        const config: SubscriptionConfig = {
+          table,
+          event,
+          schema,
+          filter,
+          callback: stableOnDataChange,
+        };
 
-      // Create the subscription
-      const unsubscribe = subscriptionManager.subscribe(subscriptionId, config);
-      unsubscribeRef.current = unsubscribe;
+        // Create the subscription
+        const unsubscribe = subscriptionManager.subscribe(subscriptionId, config);
+        unsubscribeRef.current = unsubscribe;
 
-      // Update connection state
-      isConnectedRef.current = true;
-      errorRef.current = null;
+        // Update connection state
+        isConnectedRef.current = true;
+        errorRef.current = null;
 
-      if (onStatusChange) {
-        onStatusChange('connecting');
-        // Simulate connection success after a brief delay
-        setTimeout(() => onStatusChange('connected'), 100);
+        if (onStatusChange) {
+          onStatusChange('connecting');
+          // Simulate connection success after a brief delay
+          setTimeout(() => onStatusChange('connected'), 100);
+        }
+
+        logger.realtime(`✅ Subscription setup complete: ${subscriptionId}`);
+      } catch (error) {
+        logger.error(`❌ Failed to setup subscription: ${subscriptionId}`, error);
+
+        isConnectedRef.current = false;
+        errorRef.current =
+          error instanceof Error ? error : new Error(String(error));
+
+        if (onError) {
+          onError(errorRef.current);
+        }
+
+        if (onStatusChange) {
+          onStatusChange('error');
+        }
       }
-
-      logger.realtime(`✅ Subscription setup complete: ${subscriptionId}`);
-    } catch (error) {
-      logger.error(`❌ Failed to setup subscription: ${subscriptionId}`, error);
-
-      isConnectedRef.current = false;
-      errorRef.current =
-        error instanceof Error ? error : new Error(String(error));
-
-      if (onError) {
-        onError(errorRef.current);
-      }
-
-      if (onStatusChange) {
-        onStatusChange('error');
-      }
-    }
+    }, delay);
 
     // Cleanup function
     return () => {
       logger.realtime(`🧹 Cleaning up subscription: ${subscriptionId}`);
+
+      // Clear the setup timeout to prevent memory leaks
+      clearTimeout(setupTimeoutId);
 
       if (unsubscribeRef.current) {
         unsubscribeRef.current();

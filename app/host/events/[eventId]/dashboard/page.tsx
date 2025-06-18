@@ -10,7 +10,7 @@ import {
   QuickMessageActions,
   TabNavigation,
   GuestManagement,
-  MessageComposer,
+  EnhancedMessageCenter,
   QuickActions,
   SMSTestPanel,
   type TabItem,
@@ -283,12 +283,7 @@ export default function EventDashboardPage() {
 
             {activeTab === 'messages' && (
               <div className="space-y-6">
-                <MessageComposer
-                  eventId={eventId}
-                  onMessageSent={() => {
-                    console.log('Message sent successfully!');
-                  }}
-                />
+                <EnhancedMessageCenter eventId={eventId} />
                 {/* Development mode SMS testing */}
                 {process.env.NODE_ENV === 'development' && (
                   <SMSTestPanel eventId={eventId} />
