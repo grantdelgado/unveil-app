@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { Camera, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, X, Image as ImageIcon, Video } from 'lucide-react';
 import Image from 'next/image';
 import { uploadEventMedia } from '@/services/storage';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +15,7 @@ interface PhotoUploadProps {
   className?: string;
   maxFiles?: number;
   disabled?: boolean;
+  acceptVideo?: boolean;
 }
 
 interface UploadProgress {
@@ -23,6 +24,7 @@ interface UploadProgress {
   status: 'pending' | 'uploading' | 'complete' | 'error';
   error?: string;
   preview?: string;
+  type: 'image' | 'video';
 }
 
 export default function PhotoUpload({
@@ -33,10 +35,16 @@ export default function PhotoUpload({
   className,
   maxFiles = 5,
   disabled = false,
+  acceptVideo = true,
 }: PhotoUploadProps) {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect if we're on mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Compress image before upload
   const compressImage = useCallback((file: File): Promise<File> => {
@@ -110,6 +118,10 @@ export default function PhotoUpload({
           onUploadError?.('File size must be less than 50MB');
           return false;
         }
+        if (isVideo && !acceptVideo) {
+          onUploadError?.('Video uploads are not allowed');
+          return false;
+        }
         return true;
       });
 
@@ -131,6 +143,7 @@ export default function PhotoUpload({
         progress: 0,
         status: 'pending',
         preview: createPreview(file),
+        type: file.type.startsWith('video/') ? 'video' : 'image',
       }));
 
       setUploads((prev) => [...prev, ...newUploads]);
@@ -198,229 +211,285 @@ export default function PhotoUpload({
     },
     [
       disabled,
-      uploads,
+      uploads.length,
       maxFiles,
+      acceptVideo,
+      onUploadError,
+      createPreview,
+      compressImage,
       eventId,
       userId,
-      compressImage,
-      createPreview,
       onUploadComplete,
-      onUploadError,
     ],
   );
 
-  // Handle drag and drop
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      
-      if (e.dataTransfer.files) {
-        handleFiles(e.dataTransfer.files);
-      }
-    },
-    [handleFiles],
-  );
+  // Handle camera capture
+  const handleCameraCapture = useCallback(() => {
+    if (disabled || !cameraInputRef.current) return;
+    
+    setIsCapturing(true);
+    cameraInputRef.current.click();
+  }, [disabled]);
 
+  // Handle file picker
+  const handleFilePicker = useCallback(() => {
+    if (disabled || !fileInputRef.current) return;
+    
+    fileInputRef.current.click();
+  }, [disabled]);
+
+  // Handle drag and drop
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(true);
-  }, []);
+    if (!disabled) {
+      setIsDragOver(true);
+    }
+  }, [disabled]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
   }, []);
 
-  // Handle file input change
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) {
-        handleFiles(e.target.files);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      
+      if (disabled) return;
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFiles(files);
       }
     },
-    [handleFiles],
+    [disabled, handleFiles],
   );
 
   // Remove upload
   const removeUpload = useCallback((index: number) => {
     setUploads((prev) => {
       const newUploads = [...prev];
-      // Clean up preview URL
-      if (newUploads[index].preview) {
-        URL.revokeObjectURL(newUploads[index].preview!);
+      const upload = newUploads[index];
+      
+      // Revoke preview URL to prevent memory leaks
+      if (upload.preview) {
+        URL.revokeObjectURL(upload.preview);
       }
+      
       newUploads.splice(index, 1);
       return newUploads;
     });
   }, []);
 
-  // Retry upload
-  const retryUpload = useCallback(
-    (index: number) => {
-      const upload = uploads[index];
-      if (upload && upload.status === 'error') {
-        handleFiles(new FileList());
-      }
-    },
-    [uploads, handleFiles],
-  );
-
-  const isUploading = uploads.some((upload) => upload.status === 'uploading');
-  const hasActiveUploads = uploads.length > 0;
+  // Calculate upload stats
+  const activeUploads = uploads.filter(upload => upload.status !== 'complete').length;
+  const canUploadMore = activeUploads < maxFiles;
+  const hasActiveUploads = uploads.some(upload => upload.status === 'uploading');
 
   return (
     <div className={cn('space-y-4', className)}>
       {/* Upload Area */}
       <div
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 text-center transition-all',
-          isDragOver
-            ? 'border-purple-400 bg-purple-50'
-            : 'border-stone-300 hover:border-stone-400',
+          'relative border-2 border-dashed rounded-lg transition-all duration-200',
+          'min-h-[120px] md:min-h-[160px]', // Smaller on mobile
+          isDragOver && !disabled
+            ? 'border-pink-400 bg-pink-50'
+            : 'border-gray-300 hover:border-gray-400',
           disabled && 'opacity-50 cursor-not-allowed',
-          !disabled && 'hover:bg-stone-50 cursor-pointer',
+          !disabled && 'cursor-pointer',
         )}
-        onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => !disabled && fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onClick={isMobile ? undefined : handleFilePicker}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*"
-          onChange={handleFileInput}
-          disabled={disabled}
-          className="hidden"
-        />
-
-        {isUploading ? (
-          <div className="flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-purple-300 border-t-purple-600 rounded-full animate-spin mr-3" />
-            <span className="text-stone-600">Uploading photos...</span>
-          </div>
-        ) : (
-          <>
-            <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Upload className="w-6 h-6 text-stone-500" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+          <div className="space-y-4">
+            {/* Icon */}
+            <div className="mx-auto w-12 h-12 text-gray-400">
+              <ImageIcon className="w-full h-full" />
             </div>
-            <p className="text-stone-700 font-medium mb-1">
-              Drop photos here or click to upload
-            </p>
-            <p className="text-stone-500 text-sm">
-              Images and videos up to 50MB each
-            </p>
-          </>
-        )}
+
+            {/* Text Content */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-900">
+                {isMobile ? 'Add photos & videos' : 'Drop photos & videos here'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {acceptVideo ? 'PNG, JPG, MP4 up to 50MB' : 'PNG, JPG up to 50MB'}
+              </p>
+            </div>
+
+            {/* Mobile-optimized buttons */}
+            {isMobile && canUploadMore && (
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCameraCapture();
+                  }}
+                  disabled={disabled}
+                  className="flex items-center gap-2 min-h-[44px] px-4"
+                >
+                  <Camera className="w-4 h-4" />
+                  Camera
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFilePicker();
+                  }}
+                  disabled={disabled}
+                  className="flex items-center gap-2 min-h-[44px] px-4"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </Button>
+              </div>
+            )}
+
+            {/* Desktop upload button */}
+            {!isMobile && canUploadMore && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFilePicker();
+                }}
+                disabled={disabled}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Choose Files
+              </Button>
+            )}
+
+            {!canUploadMore && (
+              <p className="text-xs text-amber-600 font-medium">
+                Maximum {maxFiles} files reached
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Camera Button for Mobile */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.accept = 'image/*';
-          input.capture = 'environment';
-          input.onchange = (e) => {
-            const target = e.target as HTMLInputElement;
-            if (target.files) {
-              handleFiles(target.files);
-            }
-          };
-          input.click();
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={acceptVideo ? "image/*,video/*" : "image/*"}
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) {
+            handleFiles(e.target.files);
+          }
         }}
         disabled={disabled}
-        className="w-full"
-      >
-        <Camera className="w-4 h-4 mr-2" />
-        Take Photo
-      </Button>
+      />
 
-      {/* Upload Progress */}
-      {hasActiveUploads && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-stone-700">
-            Uploading {uploads.length} {uploads.length === 1 ? 'file' : 'files'}
+      {/* Camera input for mobile */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept={acceptVideo ? "image/*,video/*" : "image/*"}
+        capture="environment" // Use rear camera by default
+        className="hidden"
+        onChange={(e) => {
+          setIsCapturing(false);
+          if (e.target.files) {
+            handleFiles(e.target.files);
+          }
+        }}
+        disabled={disabled}
+      />
+
+      {/* Upload Progress List */}
+      {uploads.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-gray-900">
+            {hasActiveUploads ? 'Uploading...' : 'Recent Uploads'}
           </h4>
           
-          {uploads.map((upload, index) => (
-            <div
-              key={index}
-              className="flex items-center space-x-3 p-3 bg-stone-50 rounded-lg"
-            >
-              {/* Preview */}
-                              <div className="w-10 h-10 bg-stone-200 rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                  {upload.preview ? (
-                    <Image
-                      src={upload.preview}
-                      alt="Preview"
-                      fill
-                      className="object-cover rounded"
-                    />
-                  ) : (
-                    <ImageIcon className="w-5 h-5 text-stone-400" />
-                  )}
-                </div>
-
-              {/* File Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-stone-700 truncate">
-                  {upload.file.name}
-                </p>
-                <div className="flex items-center space-x-2">
-                  {upload.status === 'uploading' && (
+          <div className="space-y-2">
+            {uploads.map((upload, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+              >
+                {/* Preview thumbnail */}
+                <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200">
+                  {upload.preview && (
                     <>
-                      <div className="flex-1 bg-stone-200 rounded-full h-1.5">
-                        <div
-                          className="bg-purple-600 h-1.5 rounded-full transition-all"
-                          style={{ width: `${upload.progress}%` }}
+                      {upload.type === 'video' ? (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Video className="w-6 h-6 text-gray-500" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={upload.preview}
+                          alt="Preview"
+                          fill
+                          className="object-cover"
                         />
-                      </div>
-                      <span className="text-xs text-stone-500">
-                        {upload.progress}%
-                      </span>
+                      )}
                     </>
                   )}
-                  {upload.status === 'complete' && (
-                    <span className="text-xs text-green-600 font-medium">
-                      Complete
-                    </span>
-                  )}
-                  {upload.status === 'error' && (
-                    <span className="text-xs text-red-600 font-medium">
-                      {upload.error}
-                    </span>
-                  )}
                 </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex items-center space-x-1">
-                {upload.status === 'error' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => retryUpload(index)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Upload className="w-4 h-4" />
-                  </Button>
-                )}
+                {/* Upload info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {upload.file.name}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1">
+                      {upload.status === 'uploading' && (
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-pink-500 h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${upload.progress}%` }}
+                          />
+                        </div>
+                      )}
+                      {upload.status === 'complete' && (
+                        <p className="text-xs text-green-600 font-medium">
+                          ✓ Uploaded
+                        </p>
+                      )}
+                      {upload.status === 'error' && (
+                        <p className="text-xs text-red-600 font-medium">
+                          ✗ {upload.error || 'Upload failed'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remove button */}
                 <Button
-                  variant="ghost"
+                  type="button"
+                  variant="outline"
                   size="sm"
                   onClick={() => removeUpload(index)}
-                  className="h-8 w-8 p-0"
+                  className="p-1 w-8 h-8 flex-shrink-0"
+                  disabled={upload.status === 'uploading'}
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

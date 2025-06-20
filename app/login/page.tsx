@@ -173,6 +173,49 @@ export default function LoginPage() {
     if (error) setError('');
   };
 
+  // Handle OTP completion (auto-submit when 6 digits entered)
+  const handleOtpComplete = async (value: string) => {
+    if (loading) return; // Prevent double submission
+    
+    // Validate OTP format
+    if (!/^\d{6}$/.test(value)) {
+      setError('Please enter a 6-digit verification code');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      logAuth('Verifying OTP for phone', { phone });
+
+      const result = await verifyOTP(phone, value);
+
+      if (result.success) {
+        logAuth('Authentication successful', {
+          userId: result.userId,
+          isNewUser: result.isNewUser,
+        });
+
+        // Success - route based on user status
+        if (result.isNewUser) {
+          router.push('/setup');
+        } else {
+          router.push('/select-event');
+        }
+      } else {
+        logAuthError('OTP verification failed', result.error);
+        setError(
+          result.error || 'Invalid verification code. Please try again.',
+        );
+      }
+    } catch (err) {
+      logAuthError('Unexpected OTP verification error', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading && step === 'phone' && phone) {
     return (
       <PageWrapper>
@@ -212,6 +255,7 @@ export default function LoginPage() {
                 onChange={handlePhoneChange}
                 disabled={loading}
                 error={error}
+                autoFocus={true}
               />
             </div>
 
@@ -233,8 +277,10 @@ export default function LoginPage() {
                 id="otp"
                 value={otp}
                 onChange={handleOtpChange}
+                onComplete={handleOtpComplete}
                 disabled={loading}
                 error={error}
+                autoFocus={true}
               />
             </div>
 
@@ -270,7 +316,7 @@ export default function LoginPage() {
           <MicroCopy>
             {step === 'phone' 
               ? "First time here? Just enter your phone — we'll set everything up for you automatically."
-              : "Didn't receive a code? Wait 60 seconds and try again."
+              : "Code will verify automatically when entered. Didn't receive it? Wait 60 seconds and try again."
             }
           </MicroCopy>
         </div>

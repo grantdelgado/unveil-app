@@ -144,10 +144,14 @@ export default function AccountSetupPage() {
               </FieldLabel>
               <TextInput
                 id="fullName"
+                type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
                 disabled={loading}
+                autoFocus={true}
+                autoComplete="name"
+                className="min-h-[44px]" // Touch-friendly height
               />
             </div>
 
@@ -162,6 +166,9 @@ export default function AccountSetupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 disabled={loading}
+                autoComplete="email"
+                inputMode="email"
+                className="min-h-[44px]" // Touch-friendly height
               />
             </div>
 
@@ -176,6 +183,7 @@ export default function AccountSetupPage() {
                 type="submit"
                 disabled={loading}
                 loading={loading}
+                className="min-h-[44px]" // Touch-friendly height
               >
                 {loading ? 'Setting up...' : 'Complete Setup'}
               </PrimaryButton>
@@ -184,6 +192,7 @@ export default function AccountSetupPage() {
                 type="button"
                 onClick={handleSkip}
                 disabled={loading}
+                className="min-h-[44px]" // Touch-friendly height
               >
                 Skip for now
               </SecondaryButton>
@@ -199,14 +208,10 @@ export default function AccountSetupPage() {
         </div>
 
         <DevModeBox>
-          <p><strong>Account Setup State:</strong></p>
-          <p>User ID: {userProfile?.id || 'N/A'}</p>
-          <p>Phone: {userProfile?.phone || 'N/A'}</p>
-          <p>Current Full Name: {userProfile?.full_name || '(empty)'}</p>
-          <p>Form Full Name: {fullName || '(empty)'}</p>
-          <p>Form Email: {email || '(empty)'}</p>
-          <p>Loading: {loading ? 'true' : 'false'}</p>
-          {error && <p className="text-red-600">Error: {error}</p>}
+          <p><strong>User Profile ID:</strong> {userProfile.id}</p>
+          <p><strong>Pre-filled Name:</strong> {userProfile.full_name || 'None'}</p>
+          <p><strong>Pre-filled Email:</strong> {userProfile.email || 'None'}</p>
+          <p><strong>Phone:</strong> {userProfile.phone}</p>
         </DevModeBox>
       </CardContainer>
     </PageWrapper>

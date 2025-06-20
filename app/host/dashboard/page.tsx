@@ -1,11 +1,13 @@
 // app/host/dashboard/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useHostEvents } from '@/hooks/events';
+import { usePullToRefresh } from '@/hooks/common/usePullToRefresh';
+import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator';
 import { formatEventDate } from '@/lib/utils/date';
 import {
   PageWrapper,
@@ -22,6 +24,7 @@ import {
 export default function HostDashboardPage() {
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Effect to get current user ID
   useEffect(() => {
@@ -45,7 +48,26 @@ export default function HostDashboardPage() {
   }, [router]);
 
   // Use the useHostEvents hook with the fetched userId
-  const { hostedEvents, loading, error } = useHostEvents(currentUserId);
+  const { hostedEvents, loading, error, refetch } = useHostEvents(currentUserId);
+
+  // Pull-to-refresh functionality
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: async () => {
+      if (refetch) {
+        await refetch();
+      }
+    },
+    threshold: 80,
+    disabled: loading,
+    hapticFeedback: true,
+  });
+
+  // Bind pull-to-refresh to container
+  useEffect(() => {
+    if (containerRef.current) {
+      pullToRefresh.bindToElement(containerRef.current);
+    }
+  }, [pullToRefresh.bindToElement]);
 
   if (loading) {
     return (
@@ -77,7 +99,24 @@ export default function HostDashboardPage() {
 
   return (
     <PageWrapper centered={false}>
-      <div className="max-w-6xl mx-auto">
+      <div
+        ref={containerRef}
+        className="max-w-6xl mx-auto h-full overflow-auto"
+        style={{ 
+          // Ensure smooth scrolling on iOS
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+      >
+        {/* Pull-to-refresh indicator */}
+        <PullToRefreshIndicator
+          isPulling={pullToRefresh.isPulling}
+          isRefreshing={pullToRefresh.isRefreshing}
+          pullDistance={pullToRefresh.pullDistance}
+          canRefresh={pullToRefresh.canRefresh}
+          refreshProgress={pullToRefresh.refreshProgress}
+        />
+
         {/* Header Section */}
         <CardContainer maxWidth="xl" className="mb-8">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
@@ -162,11 +201,22 @@ export default function HostDashboardPage() {
           )}
         </section>
 
+        {/* Microcopy */}
+        <div className="mt-8">
+          <MicroCopy>
+            {validHostedEvents.length > 0 
+              ? "Pull down to refresh your events • Need help managing your events? Contact support."
+              : "Need help getting started? Contact support at help@unveil.app"
+            }
+          </MicroCopy>
+        </div>
+
         {/* Development Mode */}
         <DevModeBox>
           <p><strong>User ID:</strong> {currentUserId}</p>
           <p><strong>Events Found:</strong> {validHostedEvents.length}</p>
           <p><strong>Loading State:</strong> {loading ? 'true' : 'false'}</p>
+          <p><strong>Pull-to-refresh:</strong> {pullToRefresh.isPulling ? 'Active' : 'Ready'}</p>
           {error && <p><strong>Error:</strong> {error}</p>}
         </DevModeBox>
       </div>
