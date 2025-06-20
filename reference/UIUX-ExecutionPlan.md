@@ -34,23 +34,23 @@
 
 ## ✨ Medium Priority – Feature Completion & Feedback States
 
-- [ ] **Photo Gallery Integration**
+- [x] **Photo Gallery Integration**
   - Summary: Complete guest photo gallery with responsive design + captions.
   - Affected Page(s): /guest/events/[id]/home
   - Files: components/features/media/GuestPhotoGallery.tsx
-  - Details: Implement full gallery view, add photo captions, optimize for mobile viewing
+  - Details: ✅ COMPLETED - Full-screen modal, tap-to-expand, keyboard navigation, mobile pinch-zoom, enhanced captions with metadata
 
-- [ ] **Real-Time RSVP Status in Host Dashboard**
+- [x] **Real-Time RSVP Status in Host Dashboard**
   - Summary: Show real-time RSVP counts and response progress.
   - Affected Page(s): /host/events/[id]/dashboard
-  - Files: components/features/host-dashboard/GuestManagement.tsx
-  - Details: Add live RSVP counters, progress bars, recent activity feed
+  - Files: components/features/host-dashboard/GuestManagement.tsx, GuestStatusSummary.tsx
+  - Details: ✅ COMPLETED - Live RSVP tracking with Supabase subscriptions, donut chart progress, real-time activity feed
 
-- [ ] **Loading & Empty State Enhancements**
+- [x] **Loading & Empty State Enhancements**
   - Summary: Improve loading UX and empty state messaging across pages.
   - Affected Page(s): All major pages
-  - Files: components/ui/LoadingSpinner.tsx, new EmptyState component
-  - Details: Add skeleton screens, engaging empty states, better loading copy
+  - Files: components/ui/EmptyState.tsx, SkeletonLoader, enhanced page loading
+  - Details: ✅ COMPLETED - Centralized EmptyState component with 5 variants, enhanced skeleton loaders, improved loading states across select-event, host dashboard, guest home
 
 - [ ] **Guest Messaging UI Finalization**
   - Summary: Polish message input, real-time list, and empty chat state.
@@ -163,10 +163,15 @@
 - Input Behavior Optimization
 - Event Creation Multi-Step Flow
 
-**Next Up:**
-- Photo Gallery Integration
-- Real-Time RSVP Status
-- Loading & Empty State Enhancements
+**Completed (Medium Priority):** 3/3 items ✅
+- Photo Gallery Integration with modal and enhanced UX
+- Real-Time RSVP Status with live tracking and visualizations
+- Loading & Empty State Enhancements with centralized components
+
+**Next Up (Medium Priority remaining):**
+- Guest Messaging UI Finalization
+- Event Card Context & Insights  
+- Form Validation & User Feedback
 
 ## ✅ Review Required
 
