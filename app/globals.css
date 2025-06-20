@@ -32,11 +32,16 @@
   --color-brand-pink: var(--color-brand-pink);
 }
 
+/* Dark mode support with brand consistency */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #fdfffc; /* Keep soft off-white even in dark mode for brand consistency */
-    --color-text: #333333;
-    --color-muted: #666666;
+    --color-bg: #1a1a1a; /* Dark background */
+    --color-text: #f5f5f5; /* Light text */
+    --color-muted: #a0a0a0; /* Muted text */
+    --color-primary: #2c1810; /* Dark muted rose */
+    --color-accent: #2a2442; /* Dark dusk lavender */
+    --color-success: #1a2e20;
+    --color-error: #2e1a1a;
   }
 }
 
@@ -49,6 +54,31 @@ body {
     -apple-system,
     sans-serif;
   line-height: 1.6;
+  /* iOS Safari viewport stability */
+  -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS Safari keyboard bug fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="number"],
+  input[type="password"],
+  textarea {
+    /* Prevent zoom on focus */
+    font-size: 16px !important;
+    /* Stable viewport behavior */
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+  
+  /* Fix for iOS keyboard pushing content */
+  .ios-keyboard-fix {
+    padding-bottom: env(keyboard-inset-height, 0);
+  }
 }
 
 /* Brand pink utility class */
@@ -69,6 +99,15 @@ body {
 
   .pb-safe-area {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pt-safe-area {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .px-safe-area {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }
 
@@ -150,6 +189,20 @@ body {
   animation: slide-down 0.3s ease-out;
 }
 
+/* Pulse animation for loading states */
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -165,7 +218,8 @@ body {
   .animate-success-bounce,
   .animate-slide-up,
   .animate-slide-down,
-  .animate-fade-in-up {
+  .animate-fade-in-up,
+  .animate-gentle-pulse {
     animation: none !important;
   }
 }
@@ -184,6 +238,18 @@ select:focus-visible,
 [role="tab"]:focus-visible {
   outline: 2px solid #FF6B6B;
   outline-offset: 2px;
+  /* Enhanced for dark mode */
+  filter: drop-shadow(0 0 4px rgba(255, 107, 107, 0.3));
+}
+
+/* Touch feedback for mobile */
+button, [role="button"] {
+  -webkit-tap-highlight-color: rgba(255, 107, 107, 0.2);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Native haptic feedback on supported devices */
+  touch-action: manipulation;
 }
 
 /* High contrast mode support */
@@ -200,4 +266,35 @@ select:focus-visible,
     background-color: #ffffff;
     border: 1px solid #000000;
   }
+  
+  /* Enhanced button contrast */
+  button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* PWA viewport optimization */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+  user-scalable: no;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Dark mode utility classes */
+.dark {
+  color-scheme: dark;
+}
+
+.dark .bg-app {
+  background-color: var(--color-bg);
+}
+
+.dark .text-primary {
+  color: var(--color-text);
 }

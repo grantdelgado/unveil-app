@@ -15,12 +15,36 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // PWA and mobile optimizations
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
+  // Mobile-first performance
+  generateEtags: false,
+  poweredByHeader: false,
+  compress: true,
   async headers() {
     return [
       {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: [
+          // PWA and mobile optimizations
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'X-Preload',
+            value: 'prefetch',
+          },
           // Content Security Policy
           {
             key: 'Content-Security-Policy',
@@ -38,13 +62,10 @@ const nextConfig: NextConfig = {
               "form-action 'self'",
               "frame-ancestors 'none'",
               'upgrade-insecure-requests',
+              "manifest-src 'self'", // PWA manifest support
             ].join('; '),
           },
           // Security headers
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload',
@@ -77,6 +98,44 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // PWA manifest with proper caching
+        source: '/manifest.json',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/manifest+json',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400', // 24 hours
+          },
+        ],
+      },
+      {
+        // Service worker
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0', // No cache for SW
+          },
+        ],
+      },
+      {
+        // Static assets optimization
+        source: '/icons/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable', // 1 year
+          },
+        ],
+      },
+      {
         // Additional headers for API routes
         source: '/api/(.*)',
         headers: [
@@ -89,6 +148,15 @@ const nextConfig: NextConfig = {
             value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
           },
         ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      // PWA offline support
+      {
+        source: '/offline',
+        destination: '/offline.html',
       },
     ];
   },
