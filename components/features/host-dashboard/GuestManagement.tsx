@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { SecondaryButton, CardContainer } from '@/components/ui';
 import { GuestStatusSummary } from './GuestStatusSummary';
 import { BulkActionShortcuts } from './BulkActionShortcuts';
@@ -29,6 +30,7 @@ export function GuestManagement({
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  const channelRef = useRef<RealtimeChannel | null>(null);
   
   // Enhanced filtering and search with debouncing
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +73,33 @@ export function GuestManagement({
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+
+    // Set up real-time subscription for participants
+    channelRef.current = supabase
+      .channel(`event_participants_management_${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_participants',
+          filter: `event_id=eq.${eventId}`,
+        },
+        async (payload) => {
+          console.log('🔄 Real-time participant update:', payload);
+          // Refresh data when participants change
+          await fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [fetchData, eventId]);
 
   // Enhanced RSVP update with optimistic updates and haptic feedback
   const handleRSVPUpdate = async (participantId: string, newStatus: string) => {
