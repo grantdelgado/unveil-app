@@ -45,8 +45,8 @@ export function GuestManagement({
       await fetchData();
       triggerHaptic('success');
     },
-    pullThreshold: 60,
-    refreshThreshold: 80
+    threshold: 80,
+    maxPullDistance: 120
   });
 
   const fetchData = useCallback(async () => {
@@ -178,7 +178,7 @@ export function GuestManagement({
   
   // Attach pull-to-refresh listeners
   useEffect(() => {
-    return pullToRefresh.attachPullToRefreshListeners(containerRef.current);
+    pullToRefresh.bindToElement(containerRef.current);
   }, [pullToRefresh]);
 
   // Enhanced filtering with memoization

@@ -4,9 +4,10 @@ import './globals.css';
 import { AuthSessionWatcher } from '@/components/features/auth/AuthSessionWatcher';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { NavigationLayout } from '@/components/features/navigation';
-import { ReactQueryProvider } from '@/lib/react-query';
+import { ReactQueryProvider } from '@/lib/react-query-client';
 import { APP_CONFIG } from '@/lib/constants';
 import { Suspense } from 'react';
+import { PerformanceMonitor } from '@/components/monitoring/PerformanceMonitor';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -28,11 +29,13 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased font-sans`}>
         <ReactQueryProvider>
           <ErrorBoundary>
-            <Suspense>
-              <AuthSessionWatcher>
-                <NavigationLayout>{children}</NavigationLayout>
-              </AuthSessionWatcher>
-            </Suspense>
+            <PerformanceMonitor>
+              <Suspense>
+                <AuthSessionWatcher>
+                  <NavigationLayout>{children}</NavigationLayout>
+                </AuthSessionWatcher>
+              </Suspense>
+            </PerformanceMonitor>
           </ErrorBoundary>
         </ReactQueryProvider>
       </body>

@@ -250,24 +250,61 @@ export const uploadEventMedia = async (
     // Validate file
     const validation = await validateFileForStorage(file);
     if (!validation.isValid) {
-      throw new Error(validation.error);
+      return {
+        data: null,
+        error: new Error(validation.error || 'File validation failed'),
+      };
     }
 
     const timestamp = Date.now();
     const fileExt = file.name.split('.').pop();
-    const fileName = `${timestamp}-${userId}.${fileExt}`;
-    const filePath = `events/${eventId}/media/${fileName}`;
+    const fileName = `${timestamp}.${fileExt}`;
+    const filePath = `${eventId}/${fileName}`;
 
-    const uploadResult = await uploadFile('media', filePath, file);
+    // Upload to correct bucket
+    const uploadResult = await uploadFile('event-media', filePath, file);
+
+    if (uploadResult.error) {
+      return uploadResult;
+    }
+
+    // Create media record in database
+    const { data: mediaRecord, error: dbError } = await supabase
+      .from('media')
+      .insert({
+        event_id: eventId,
+        uploader_user_id: userId,
+        storage_path: filePath,
+        media_type: validation.mediaType!,
+        caption: null,
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      // Clean up uploaded file if database insert fails
+      await deleteFile('event-media', filePath);
+      return {
+        data: null,
+        error: new Error(`Failed to save media record: ${dbError.message}`),
+      };
+    }
 
     return {
-      ...uploadResult,
-      storagePath: filePath,
-      mediaType: validation.mediaType!,
-      originalName: file.name,
+      data: {
+        id: mediaRecord.id,
+        path: filePath,
+        fullPath: `event-media/${filePath}`,
+        mediaRecord,
+      },
+      error: null,
+      metadata: validation.metadata,
     };
   } catch (error) {
-    handleStorageError(error, 'uploadEventMedia');
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error('Upload failed'),
+    };
   }
 };
 

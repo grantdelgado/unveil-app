@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/app/reference/supabase.types';
+import { useRealtimeSubscription } from '@/hooks/realtime';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type Message = Database['public']['Tables']['messages']['Row'];
 type PublicUserProfile =
@@ -22,6 +24,11 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMessageTimeRef = useRef<number>(0);
+  const messageCountRef = useRef<number>(0);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -90,8 +97,164 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Handle real-time message updates
+  const handleMessageChange = useCallback(
+    (payload: RealtimePostgresChangesPayload<Message>) => {
+      console.log('📨 Real-time message update:', payload);
+
+      if (payload.eventType === 'INSERT') {
+        const newMessage = payload.new;
+        
+        // Fetch sender info for the new message
+        if (newMessage.sender_user_id) {
+          supabase
+            .from('public_user_profiles')
+            .select('*')
+            .eq('id', newMessage.sender_user_id)
+            .single()
+            .then(({ data: senderData }) => {
+            const messageWithSender: MessageWithSender = {
+              ...newMessage,
+              sender: senderData || null,
+            };
+
+            setMessages((prev) => {
+              // Avoid duplicates
+              const exists = prev.some((m) => m.id === newMessage.id);
+              if (exists) return prev;
+              return [...prev, messageWithSender];
+            });
+
+            // Scroll to bottom
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          });
+        }
+      } else if (payload.eventType === 'UPDATE') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === payload.new.id ? { ...msg, ...payload.new } : msg,
+          ),
+        );
+      } else if (payload.eventType === 'DELETE') {
+        setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+      }
+    },
+    [],
+  );
+
+  // Real-time subscription for messages
+  const { isConnected } = useRealtimeSubscription({
+    subscriptionId: `messages-${eventId}`,
+    table: 'messages',
+    event: '*',
+    filter: `event_id=eq.${eventId}`,
+    enabled: !!eventId,
+    onDataChange: handleMessageChange,
+    onError: (error) => {
+      console.error('❌ Message subscription error:', error);
+    },
+    onStatusChange: (status) => {
+      console.log(`📡 Message subscription status: ${status}`);
+    },
+  });
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  // Message validation
+  const validateMessage = useCallback((content: string): { isValid: boolean; error?: string } => {
+    const trimmedContent = content.trim();
+    
+    if (!trimmedContent) {
+      return { isValid: false, error: 'Message cannot be empty' };
+    }
+    
+    if (trimmedContent.length > 500) {
+      return { isValid: false, error: 'Message too long (max 500 characters)' };
+    }
+    
+    // Check for spam patterns
+    const spamPatterns = [
+      /(.)\1{10,}/i, // Repeated characters
+      /[A-Z]{20,}/, // Too many caps
+      /(https?:\/\/[^\s]+)/gi, // URLs (optional restriction)
+    ];
+    
+    for (const pattern of spamPatterns) {
+      if (pattern.test(trimmedContent)) {
+        return { isValid: false, error: 'Message appears to be spam' };
+      }
+    }
+    
+    return { isValid: true };
+  }, []);
+
+  // Rate limiting
+  const checkRateLimit = useCallback((): { canSend: boolean; error?: string } => {
+    const now = Date.now();
+    const timeSinceLastMessage = now - lastMessageTimeRef.current;
+    
+    // Minimum 2 seconds between messages
+    if (timeSinceLastMessage < 2000) {
+      return { 
+        canSend: false, 
+        error: `Please wait ${Math.ceil((2000 - timeSinceLastMessage) / 1000)} seconds before sending another message` 
+      };
+    }
+    
+    // Reset counter every minute
+    if (timeSinceLastMessage > 60000) {
+      messageCountRef.current = 0;
+    }
+    
+    // Max 10 messages per minute
+    if (messageCountRef.current >= 10) {
+      return { 
+        canSend: false, 
+        error: 'Too many messages. Please wait a minute before sending more.' 
+      };
+    }
+    
+    return { canSend: true };
+  }, []);
+
+  // Typing indicator logic
+  const handleTyping = useCallback(() => {
+    if (!currentUserId || !eventId) return;
+
+    setIsTyping(true);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to stop typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 3000);
+  }, [currentUserId, eventId]);
+
   const sendMessage = useCallback(async () => {
     if (!newMessage.trim() || !currentUserId || sending) return;
+
+    // Validate message content
+    const messageValidation = validateMessage(newMessage);
+    if (!messageValidation.isValid) {
+      alert(messageValidation.error);
+      return;
+    }
+
+    // Check rate limiting
+    const rateLimitCheck = checkRateLimit();
+    if (!rateLimitCheck.canSend) {
+      alert(rateLimitCheck.error);
+      return;
+    }
 
     setSending(true);
 
@@ -105,19 +268,30 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
 
       if (error) {
         console.error('❌ Error sending message:', error);
-        alert('Something went wrong. Please try again.');
+        alert('Failed to send message. Please try again.');
         return;
       }
 
+      // Update rate limiting counters
+      lastMessageTimeRef.current = Date.now();
+      messageCountRef.current += 1;
+
       setNewMessage('');
-      await fetchMessages();
+      setIsTyping(false);
+      
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Real-time subscription will handle adding the message to the list
     } catch (err) {
       console.error('❌ Unexpected error sending message:', err);
       alert('Something went wrong. Please try again.');
     } finally {
       setSending(false);
     }
-  }, [newMessage, currentUserId, sending, eventId, fetchMessages]);
+  }, [newMessage, currentUserId, sending, eventId, validateMessage, checkRateLimit]);
 
   const formatMessageTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
@@ -170,10 +344,24 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
 
   return (
     <div className="bg-app rounded-xl shadow-sm border border-stone-200 p-6">
-      <h2 className="text-xl font-medium text-stone-800 mb-4">Broadcasts</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-medium text-stone-800">Broadcasts</h2>
+        
+        {/* Connection Status */}
+        <div className="flex items-center space-x-2">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              isConnected ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          />
+          <span className="text-xs text-stone-500">
+            {isConnected ? 'Live' : 'Offline'}
+          </span>
+        </div>
+      </div>
 
       {/* Messages List */}
-      <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+      <div className="space-y-3 mb-4 max-h-96 overflow-y-auto scroll-smooth">
         {messages.length > 0 ? (
           messages.map((message) => {
             const isOwnMessage = message.sender_user_id === currentUserId;
@@ -216,31 +404,61 @@ function GuestMessaging({ eventId, currentUserId }: GuestMessagingProps) {
             </p>
           </div>
         )}
+        
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Message Input */}
-      <div className="flex space-x-3">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Share a message with everyone..."
-          className="flex-1 px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all"
-          disabled={sending || !currentUserId}
-          maxLength={500}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={!newMessage.trim() || sending || !currentUserId}
-          className="px-4 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          {sending ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            'Send'
-          )}
-        </button>
+      <div className="space-y-2">
+        {/* Typing indicator placeholder for future enhancement */}
+        {isTyping && (
+          <div className="text-xs text-stone-500 px-2">
+            Typing...
+          </div>
+        )}
+        
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="Share a message with everyone..."
+            className="flex-1 px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 transition-all text-base" // text-base prevents zoom on iOS
+            disabled={sending || !currentUserId}
+            maxLength={500}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || sending || !currentUserId}
+            className="px-4 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+          >
+            {sending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span className="text-sm">Send</span>
+            )}
+          </button>
+        </div>
+        
+        {/* Character count */}
+        {newMessage.length > 400 && (
+          <div className="text-xs text-stone-500 text-right px-2">
+            {500 - newMessage.length} characters remaining
+          </div>
+        )}
       </div>
     </div>
   );

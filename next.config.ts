@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   images: {
@@ -30,7 +31,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://wvhtbqvnamerdkkjknuv.supabase.co https://avatars.githubusercontent.com",
               "media-src 'self' blob: https://wvhtbqvnamerdkkjknuv.supabase.co",
-              "connect-src 'self' https://wvhtbqvnamerdkkjknuv.supabase.co wss://wvhtbqvnamerdkkjknuv.supabase.co https://api.twilio.com",
+              "connect-src 'self' https://wvhtbqvnamerdkkjknuv.supabase.co wss://wvhtbqvnamerdkkjknuv.supabase.co https://api.twilio.com https://*.ingest.sentry.io",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
@@ -93,4 +94,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry config for error tracking and performance monitoring
+export default withSentryConfig(nextConfig, {
+  // Sentry build-time configuration
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  
+  // Upload source maps in production for better error tracking
+  silent: process.env.NODE_ENV === 'production',
+  widenClientFileUpload: true,
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+  tunnelRoute: '/monitoring',
+  sourcemaps: {
+    disable: true,
+  },
+  disableLogger: process.env.NODE_ENV === 'production',
+});
