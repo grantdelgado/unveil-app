@@ -1,6 +1,7 @@
 'use client';
 
-import { UnveilInput, MicroCopy } from '@/components/ui';
+import { ChangeEvent } from 'react';
+import { TextInput, MicroCopy } from '@/components/ui';
 import type { EventFormData, EventFormErrors } from './CreateEventWizard';
 
 interface EventBasicsStepProps {
@@ -18,10 +19,10 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           Wedding/Event Name <span className="text-red-500">*</span>
         </label>
-        <UnveilInput
+        <TextInput
           id="title"
           value={formData.title}
-          onChange={(e) => onUpdate('title', e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate('title', e.target.value)}
           placeholder="e.g., Sarah & John's Wedding"
           disabled={disabled}
           error={errors.title}
@@ -39,11 +40,11 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
           <label htmlFor="event_date" className="block text-sm font-medium text-gray-700">
             Event Date <span className="text-red-500">*</span>
           </label>
-          <UnveilInput
+          <TextInput
             type="date"
             id="event_date"
             value={formData.event_date}
-            onChange={(e) => onUpdate('event_date', e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate('event_date', e.target.value)}
             disabled={disabled}
             error={errors.event_date}
             min={new Date().toISOString().split('T')[0]}
@@ -56,11 +57,11 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
           <label htmlFor="event_time" className="block text-sm font-medium text-gray-700">
             Event Time <span className="text-red-500">*</span>
           </label>
-          <UnveilInput
+          <TextInput
             type="time"
             id="event_time"
             value={formData.event_time}
-            onChange={(e) => onUpdate('event_time', e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate('event_time', e.target.value)}
             disabled={disabled}
             error={errors.event_time}
             className="text-[16px] min-h-[44px]"
@@ -73,10 +74,10 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
         <label htmlFor="location" className="block text-sm font-medium text-gray-700">
           Location
         </label>
-        <UnveilInput
+        <TextInput
           id="location"
           value={formData.location}
-          onChange={(e) => onUpdate('location', e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate('location', e.target.value)}
           placeholder="e.g., Central Park, New York"
           disabled={disabled}
           maxLength={200}
@@ -93,7 +94,7 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
         <textarea
           id="description"
           value={formData.description}
-          onChange={(e) => onUpdate('description', e.target.value)}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onUpdate('description', e.target.value)}
           placeholder="Tell your guests about your special day..."
           rows={4}
           maxLength={500}
@@ -110,7 +111,7 @@ export function EventBasicsStep({ formData, errors, onUpdate, disabled }: EventB
             type="checkbox"
             id="is_public"
             checked={formData.is_public}
-            onChange={(e) => onUpdate('is_public', e.target.checked)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate('is_public', e.target.checked)}
             className="h-5 w-5 text-pink-500 focus:ring-pink-300 border-gray-300 rounded mt-0.5"
             disabled={disabled}
           />

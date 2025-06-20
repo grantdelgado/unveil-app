@@ -13,9 +13,7 @@ interface GuestImportStepProps {
 
 export function GuestImportStep({
   importMethod,
-  guestCount,
   onMethodChange,
-  onGuestCountChange,
   disabled
 }: GuestImportStepProps) {
   const options = [

@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { uploadFile, getPublicUrl } from '@/services/storage';
-import { formatEventDate } from '@/lib/utils';
 import type { Database } from '@/app/reference/supabase.types';
 import {
   PageWrapper,
@@ -14,7 +13,6 @@ import {
   SectionTitle,
   PrimaryButton,
   SecondaryButton,
-  MicroCopy,
   DevModeBox
 } from '@/components/ui';
 

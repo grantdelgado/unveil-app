@@ -39,7 +39,7 @@ export default function PhotoUpload({
 }: PhotoUploadProps) {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -211,7 +211,6 @@ export default function PhotoUpload({
     },
     [
       disabled,
-      uploads.length,
       maxFiles,
       acceptVideo,
       onUploadError,
@@ -220,6 +219,7 @@ export default function PhotoUpload({
       eventId,
       userId,
       onUploadComplete,
+      uploads,
     ],
   );
 
@@ -227,7 +227,6 @@ export default function PhotoUpload({
   const handleCameraCapture = useCallback(() => {
     if (disabled || !cameraInputRef.current) return;
     
-    setIsCapturing(true);
     cameraInputRef.current.click();
   }, [disabled]);
 
@@ -406,7 +405,6 @@ export default function PhotoUpload({
         capture="environment" // Use rear camera by default
         className="hidden"
         onChange={(e) => {
-          setIsCapturing(false);
           if (e.target.files) {
             handleFiles(e.target.files);
           }

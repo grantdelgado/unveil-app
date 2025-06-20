@@ -41,7 +41,7 @@ export default function SelectEventPage() {
     if (containerRef.current) {
       pullToRefresh.bindToElement(containerRef.current);
     }
-  }, [pullToRefresh.bindToElement]);
+  }, [pullToRefresh]);
 
   if (loading) {
     return (

@@ -67,7 +67,7 @@ export default function HostDashboardPage() {
     if (containerRef.current) {
       pullToRefresh.bindToElement(containerRef.current);
     }
-  }, [pullToRefresh.bindToElement]);
+  }, [pullToRefresh]);
 
   if (loading) {
     return (
