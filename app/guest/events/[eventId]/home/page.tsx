@@ -18,8 +18,8 @@ import {
   SecondaryButton,
   BackButton,
   MicroCopy,
-  LoadingSpinner,
-  DevModeBox
+  DevModeBox,
+  SkeletonLoader
 } from '@/components/ui';
 
 export default function GuestEventHomePage() {
@@ -87,7 +87,24 @@ export default function GuestEventHomePage() {
   if (loading) {
     return (
       <PageWrapper>
-        <LoadingSpinner size="lg" text="Loading your invitation..." />
+        <div className="max-w-md mx-auto space-y-6">
+          {/* Event header skeleton */}
+          <CardContainer>
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              <div className="grid grid-cols-3 gap-3 mt-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          </CardContainer>
+          
+          {/* Content skeleton */}
+          <SkeletonLoader variant="card" count={2} />
+        </div>
       </PageWrapper>
     );
   }

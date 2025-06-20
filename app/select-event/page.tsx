@@ -18,7 +18,8 @@ import {
   IconButton,
   MicroCopy,
   DevModeBox,
-  LoadingSpinner
+  EmptyState,
+  SkeletonLoader
 } from '@/components/ui';
 
 export default function SelectEventPage() {
@@ -46,7 +47,18 @@ export default function SelectEventPage() {
   if (loading) {
     return (
       <PageWrapper>
-        <LoadingSpinner size="lg" text="Loading events..." />
+        <div className="max-w-md mx-auto space-y-6 pt-8">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <LogoContainer className="justify-start mb-4" />
+              <div className="h-8 w-32 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+          
+          <SkeletonLoader variant="card" count={3} />
+        </div>
       </PageWrapper>
     );
   }
@@ -192,13 +204,10 @@ export default function SelectEventPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center space-y-4 py-8">
-                <div className="text-6xl mb-4">🎉</div>
-                <SectionTitle>No Events Yet</SectionTitle>
-                <SubTitle>
-                  You haven&apos;t been invited to any events yet, but you can create your own!
-                </SubTitle>
-              </div>
+              <EmptyState
+                variant="events"
+                onAction={handleCreateEvent}
+              />
             )}
 
             {/* Create Event Button */}
